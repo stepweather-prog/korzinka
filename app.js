@@ -1,3 +1,4 @@
+// ===================== СОСТОЯНИЕ =====================
 let state = {
     plans: JSON.parse(localStorage.getItem('korzinka_plans')) || [],
     activePlanId: localStorage.getItem('korzinka_active_id') || null,
@@ -7,7 +8,9 @@ let state = {
     selectedPlans: []
 };
 
-// --- DOM ---
+const ITEMS_PER_PAGE = 10; // Сколько строк на одном листике
+
+// ===================== DOM =====================
 const tabs = document.querySelectorAll('.tab');
 const views = document.querySelectorAll('.view');
 const addInput = document.getElementById('new-item-input');
@@ -16,10 +19,8 @@ const addUnitSelect = document.getElementById('new-unit-select');
 const addPriceInput = document.getElementById('new-price-input');
 const addBtn = document.getElementById('add-btn');
 
-const planningList = document.getElementById('planning-list');
-const planningPrices = document.getElementById('planning-prices');
-const shoppingList = document.getElementById('shopping-list');
-const shoppingPrices = document.getElementById('shopping-prices');
+const planningPagesContainer = document.getElementById('planning-pages');
+const shoppingPagesContainer = document.getElementById('shopping-pages');
 
 const startShoppingBtn = document.getElementById('start-shopping-btn');
 const progressBar = document.getElementById('progress-bar');
@@ -46,13 +47,14 @@ const currentMonthLabel = document.getElementById('current-month-label');
 const statsTotalSum = document.getElementById('stats-total-sum');
 const statsPlansCount = document.getElementById('stats-plans-count');
 const statsPlansList = document.getElementById('stats-plans-list');
+const clearStatsBtn = document.getElementById('clear-stats-btn');
 
 const selectModeBtn = document.getElementById('select-mode-btn');
 const selectModeActions = document.getElementById('select-mode-actions');
 const cancelSelectBtn = document.getElementById('cancel-select-btn');
 const deleteSelectedBtn = document.getElementById('delete-selected-btn');
 
-// Модальное окно
+// Модалка
 const modal = document.getElementById('plan-details-modal');
 const modalTitle = document.getElementById('modal-plan-title');
 const modalDate = document.getElementById('modal-plan-date');
@@ -61,10 +63,9 @@ const modalSummary = document.getElementById('modal-plan-summary');
 const modalCloseBtn = document.getElementById('modal-close-btn');
 const modalSaveBtn = document.getElementById('modal-save-btn');
 
-// Текущий открытый план в модалке (для редактирования)
 let modalCurrentPlanId = null;
 
-// --- НАВИГАЦИЯ ---
+// ===================== НАВИГАЦИЯ =====================
 tabs.forEach(tab => {
     tab.addEventListener('click', () => {
         tabs.forEach(t => t.classList.remove('active'));
@@ -75,7 +76,7 @@ tabs.forEach(tab => {
     });
 });
 
-// --- ХЕЛПЕРЫ ---
+// ===================== ХЕЛПЕРЫ =====================
 function formatPrice(price) {
     if (!price && price !== 0) return '';
     return new Intl.NumberFormat('ru-RU', { 
@@ -102,7 +103,15 @@ function getQtyLabel(item) {
     return `${item.qty} ${item.unit || 'шт'}`;
 }
 
-// --- ПЛАНИРОВАНИЕ ---
+function chunk(arr, size) {
+    const result = [];
+    for (let i = 0; i < arr.length; i += size) {
+        result.push(arr.slice(i, i + size));
+    }
+    return result;
+}
+
+// ===================== ПЛАНИРОВАНИЕ =====================
 addBtn.addEventListener('click', addItem);
 addInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addItem(); });
 addQtyInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addItem(); });
@@ -119,7 +128,7 @@ function addItem() {
     const price = priceValue === '' ? null : parseFloat(priceValue);
 
     state.currentItems.push({
-        id: Date.now().toString(),
+        id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
         name: text,
         qty: isNaN(qty) ? 1 : qty,
         unit: unit,
@@ -136,36 +145,18 @@ function addItem() {
 }
 
 function renderPlanningList() {
-    planningList.innerHTML = '';
-    planningPrices.innerHTML = '';
     let sum = 0;
-    
-    state.currentItems.forEach(item => {
-        const itemTotal = getItemTotal(item);
-        sum += itemTotal;
+    state.currentItems.forEach(item => sum += getItemTotal(item));
 
-        const li = document.createElement('li');
-        li.className = 'list-item';
-        li.innerHTML = `
-            <span class="item-name" title="${item.name}">${item.name}</span>
-            <input type="number" class="item-qty-input" value="${item.qty}" min="0" step="0.001" 
-                   onchange="updatePlanningQty('${item.id}', this.value)" 
-                   title="${item.unit}">
-            <span class="item-qty">${item.unit}</span>
-            <button class="delete-btn" onclick="deleteItem('${item.id}')" title="Убрать">✕</button>
-        `;
-        planningList.appendChild(li);
+    const pages = chunk(state.currentItems, ITEMS_PER_PAGE);
+    if (pages.length === 0) pages.push([]);
 
-        const priceLi = document.createElement('li');
-        priceLi.textContent = item.price ? formatPrice(itemTotal) : '—';
-        planningPrices.appendChild(priceLi);
-    });
-    
+    renderPages(planningPagesContainer, pages, 'planning');
+
     const title = document.getElementById('plan-title');
     title.textContent = sum > 0 ? `Новый список (${formatPrice(sum)})` : 'Новый список';
 }
 
-// Обновление количества в процессе планирования
 window.updatePlanningQty = function(id, value) {
     const item = state.currentItems.find(i => i.id === id);
     if (!item) return;
@@ -204,7 +195,7 @@ startShoppingBtn.addEventListener('click', () => {
     renderPlanningList();
 });
 
-// --- ВЫПОЛНЕНИЕ ---
+// ===================== ВЫПОЛНЕНИЕ =====================
 function renderShoppingList() {
     const activePlan = state.plans.find(p => p.id === state.activePlanId);
     
@@ -217,9 +208,6 @@ function renderShoppingList() {
     noActivePlan.classList.add('hidden');
     activePlanContent.classList.remove('hidden');
 
-    shoppingList.innerHTML = '';
-    shoppingPrices.innerHTML = '';
-    
     let checkedCount = 0;
     let totalSum = 0;
     let spentSum = 0;
@@ -231,22 +219,11 @@ function renderShoppingList() {
             spentSum += itemTotal;
         }
         totalSum += itemTotal;
-        
-        const li = document.createElement('li');
-        li.className = `list-item ${item.checked ? 'done' : ''}`;
-        const imgSrc = item.checked ? 'images/check_mark.png' : 'images/tick_a_box.png';
-        li.innerHTML = `
-            <img src="${imgSrc}" class="checkbox-img" onclick="toggleCheck('${item.id}')">
-            <span class="item-name" title="${item.name}">${item.name}</span>
-            <span class="item-qty">${getQtyLabel(item)}</span>
-        `;
-        shoppingList.appendChild(li);
-
-        const priceLi = document.createElement('li');
-        priceLi.textContent = item.price ? formatPrice(itemTotal) : '—';
-        if (item.checked) priceLi.classList.add('done');
-        shoppingPrices.appendChild(priceLi);
     });
+
+    const pages = chunk(activePlan.items, ITEMS_PER_PAGE);
+    if (pages.length === 0) pages.push([]);
+    renderPages(shoppingPagesContainer, pages, 'shopping');
 
     updateProgress(checkedCount, activePlan.items.length);
     updateTotalSum(spentSum, totalSum);
@@ -290,7 +267,86 @@ deleteActivePlanBtn.addEventListener('click', () => {
     renderShoppingList();
 });
 
-// --- МЕНЮ ---
+// ===================== УНИВЕРСАЛЬНЫЙ РЕНДЕР СТРАНИЦ =====================
+function renderPages(container, pages, mode) {
+    // Очищаем контейнер
+    container.innerHTML = '';
+
+    pages.forEach((pageItems, pageIndex) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'list-wrapper';
+
+        // 1. Декоративный листик (фон)
+        const bg = document.createElement('img');
+        bg.src = 'images/list.png';
+        bg.alt = 'Листик';
+        bg.className = 'list-bg';
+        wrapper.appendChild(bg);
+
+        // 2. Панель текста
+        const textPanel = document.createElement('div');
+        textPanel.className = 'text-panel';
+        const ul = document.createElement('ul');
+        ul.className = 'items-list';
+        ul.id = `${mode}-list-${pageIndex}`;
+
+        pageItems.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'list-item' + (item.checked ? ' done' : '');
+
+            if (mode === 'planning') {
+                li.innerHTML = `
+                    <span class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
+                    <input type="number" class="item-qty-input" value="${item.qty}" min="0" step="0.001"
+                           onchange="updatePlanningQty('${item.id}', this.value)">
+                    <span class="item-qty">${item.unit}</span>
+                    <button class="delete-btn" onclick="deleteItem('${item.id}')" title="Убрать">✕</button>
+                `;
+            } else {
+                const imgSrc = item.checked ? 'images/check_mark.png' : 'images/tick_a_box.png';
+                li.innerHTML = `
+                    <img src="${imgSrc}" class="checkbox-img" onclick="toggleCheck('${item.id}')" alt="">
+                    <span class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
+                    <span class="item-qty">${getQtyLabel(item)}</span>
+                `;
+            }
+            ul.appendChild(li);
+        });
+
+        textPanel.appendChild(ul);
+        wrapper.appendChild(textPanel);
+
+        // 3. Панель цен
+        const pricesPanel = document.createElement('div');
+        pricesPanel.className = 'price-panel';
+        const pricesUl = document.createElement('ul');
+        pricesUl.className = 'prices-list';
+        pricesUl.id = `${mode}-prices-${pageIndex}`;
+
+        pageItems.forEach(item => {
+            const priceLi = document.createElement('li');
+            priceLi.textContent = item.price ? formatPrice(getItemTotal(item)) : '—';
+            if (item.checked) priceLi.classList.add('done');
+            pricesUl.appendChild(priceLi);
+        });
+
+        pricesPanel.appendChild(pricesUl);
+        wrapper.appendChild(pricesPanel);
+
+        container.appendChild(wrapper);
+    });
+}
+
+// Простая защита от XSS — экранируем < > & "
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// ===================== МЕНЮ =====================
 menuBtn.addEventListener('click', () => {
     renderSavedPlans();
     renderStats();
@@ -324,7 +380,7 @@ function switchMenuTab(tab) {
     }
 }
 
-// --- РЕЖИМ ВЫБОРА ---
+// ===================== РЕЖИМ ВЫБОРА (МАССОВОЕ УДАЛЕНИЕ) =====================
 selectModeBtn.addEventListener('click', enterSelectMode);
 cancelSelectBtn.addEventListener('click', exitSelectMode);
 deleteSelectedBtn.addEventListener('click', deleteSelectedPlans);
@@ -375,7 +431,7 @@ window.togglePlanSelection = function(planId) {
     renderSavedPlans();
 };
 
-// --- СПИСОК ПЛАНОВ ---
+// ===================== СПИСОК ПЛАНОВ =====================
 function renderSavedPlans() {
     savedPlansList.innerHTML = '';
     const reversedPlans = [...state.plans].reverse();
@@ -405,7 +461,7 @@ function renderSavedPlans() {
             li.innerHTML = `
                 <img src="${imgSrc}" class="plan-checkbox" onclick="togglePlanSelection('${plan.id}')">
                 <div class="plan-content">
-                    <h3>${plan.name}</h3>
+                    <h3>${escapeHtml(plan.name)}</h3>
                     <p>Куплено: ${checked} из ${total} (${percent}%)</p>
                     ${planTotal > 0 ? `<p class="plan-sum">${formatPrice(planSpent)} / ${formatPrice(planTotal)}</p>` : ''}
                     <div class="plan-progress"><div class="plan-progress-bar" style="width: ${percent}%"></div></div>
@@ -413,7 +469,7 @@ function renderSavedPlans() {
             `;
         } else {
             li.innerHTML = `
-                <h3>${plan.name}</h3>
+                <h3>${escapeHtml(plan.name)}</h3>
                 <p>Куплено: ${checked} из ${total} (${percent}%)</p>
                 ${planTotal > 0 ? `<p class="plan-sum">${formatPrice(planSpent)} / ${formatPrice(planTotal)}</p>` : ''}
                 <div class="plan-progress"><div class="plan-progress-bar" style="width: ${percent}%"></div></div>
@@ -450,7 +506,7 @@ window.resumePlan = function(planId) {
     document.getElementById('tab-shop').click();
 };
 
-// --- СТАТИСТИКА ---
+// ===================== СТАТИСТИКА =====================
 prevMonthBtn.addEventListener('click', () => {
     state.statsMonth.setMonth(state.statsMonth.getMonth() - 1);
     renderStats();
@@ -459,6 +515,36 @@ prevMonthBtn.addEventListener('click', () => {
 nextMonthBtn.addEventListener('click', () => {
     state.statsMonth.setMonth(state.statsMonth.getMonth() + 1);
     renderStats();
+});
+
+clearStatsBtn.addEventListener('click', () => {
+    const year = state.statsMonth.getFullYear();
+    const month = state.statsMonth.getMonth();
+    
+    const monthPlans = state.plans.filter(plan => {
+        const planDate = plan.createdAt ? new Date(plan.createdAt) : new Date(plan.date);
+        return planDate.getFullYear() === year && planDate.getMonth() === month;
+    });
+
+    if (monthPlans.length === 0) {
+        alert('За этот месяц нет планов для удаления');
+        return;
+    }
+
+    const monthName = state.statsMonth.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+    if (!confirm(`Удалить все планы за ${monthName} (${monthPlans.length} шт.)?`)) return;
+
+    const idsToRemove = monthPlans.map(p => p.id);
+    state.plans = state.plans.filter(p => !idsToRemove.includes(p.id));
+
+    if (state.activePlanId && idsToRemove.includes(state.activePlanId)) {
+        state.activePlanId = null;
+        renderShoppingList();
+    }
+
+    saveToLocalStorage();
+    renderStats();
+    renderSavedPlans();
 });
 
 function renderStats() {
@@ -498,19 +584,34 @@ function renderStats() {
         
         const li = document.createElement('li');
         li.className = 'plan-item';
-        li.style.cursor = 'pointer';
-        li.onclick = () => window.openPlanDetails(plan.id);
         li.innerHTML = `
-            <h3>${plan.name}</h3>
-            <p>Куплено: ${checked} из ${total}</p>
-            ${planTotal > 0 ? `<p class="plan-sum">${formatPrice(planSpent)} / ${formatPrice(planTotal)}</p>` : ''}
-            <p style="font-size:12px; color:#4CAF50; margin-top:5px;">Нажмите, чтобы посмотреть детали ▸</p>
+            <button class="delete-plan-btn" onclick="deletePlanFromStats('${plan.id}', event)" title="Удалить">✕</button>
+            <div onclick="window.openPlanDetails('${plan.id}')" style="cursor:pointer;">
+                <h3>${escapeHtml(plan.name)}</h3>
+                <p>Куплено: ${checked} из ${total}</p>
+                ${planTotal > 0 ? `<p class="plan-sum">${formatPrice(planSpent)} / ${formatPrice(planTotal)}</p>` : ''}
+                <p style="font-size:12px; color:#4CAF50; margin-top:5px;">Нажмите, чтобы посмотреть детали ▸</p>
+            </div>
         `;
         statsPlansList.appendChild(li);
     });
 }
 
-// --- МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ ПЛАНА (с редактированием) ---
+window.deletePlanFromStats = function(planId, event) {
+    event.stopPropagation();
+    if (!confirm('Удалить этот план из статистики?')) return;
+    
+    state.plans = state.plans.filter(p => p.id !== planId);
+    if (state.activePlanId === planId) {
+        state.activePlanId = null;
+        renderShoppingList();
+    }
+    saveToLocalStorage();
+    renderStats();
+    renderSavedPlans();
+};
+
+// ===================== МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ ПЛАНА =====================
 window.openPlanDetails = function(planId) {
     const plan = state.plans.find(p => p.id === planId);
     if (!plan) return;
@@ -532,7 +633,7 @@ function renderModalItems(plan) {
         const totalPrice = item.price ? formatPrice(getItemTotal(item)) : '—';
         li.innerHTML = `
             <img src="${imgSrc}" class="modal-item-check">
-            <span class="modal-item-name ${item.checked ? 'checked' : ''}">${item.name}</span>
+            <span class="modal-item-name ${item.checked ? 'checked' : ''}">${escapeHtml(item.name)}</span>
             <input type="number" class="modal-item-qty-input" value="${item.qty}" min="0" step="0.001"
                    onchange="updateModalQty('${item.id}', this.value)">
             <span class="item-qty" style="font-size:11px;">${item.unit || 'шт'}</span>
@@ -557,7 +658,6 @@ function renderModalItems(plan) {
     `;
 }
 
-// Редактирование количества прямо в модалке
 window.updateModalQty = function(itemId, value) {
     const plan = state.plans.find(p => p.id === modalCurrentPlanId);
     if (!plan) return;
@@ -569,10 +669,11 @@ window.updateModalQty = function(itemId, value) {
     saveToLocalStorage();
     renderModalItems(plan);
     
-    // Если это активный план — обновим и «Выполнение»
     if (plan.id === state.activePlanId) {
         renderShoppingList();
     }
+    renderStats();
+    renderSavedPlans();
 };
 
 modalCloseBtn.addEventListener('click', () => {
@@ -599,13 +700,15 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// --- ПАМЯТЬ ---
+// ===================== ПАМЯТЬ =====================
 function saveToLocalStorage() {
     localStorage.setItem('korzinka_plans', JSON.stringify(state.plans));
     localStorage.setItem('korzinka_active_id', state.activePlanId || '');
 }
 
+// ===================== СТАРТ =====================
 function init() {
+    renderPlanningList();
     renderShoppingList();
 }
 
