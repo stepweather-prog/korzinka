@@ -195,8 +195,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     position: relative;
     z-index: 2;
     list-style: none;
-    /* ВОТ ТУТ: left padding 35px — сдвигает текст от края листика */
-    padding: 45px 25px 25px 35px;
+    padding: 45px 20px 25px 60px; /* <--- 60px слева, чтобы точно отъехать от края */
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -279,7 +278,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     line-height: 1.2;
     min-width: 0;
     overflow: hidden;
-    padding-left: 5px; /* дополнительный микросдвиг текста */
+    padding-left: 10px; /* <--- еще 10px внутри пункта */
 }
 
 .list-item.done { text-decoration: line-through; color: #888; }
