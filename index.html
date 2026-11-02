@@ -4,43 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Корзинка</title>
-     <!-- Иконка на вкладке браузера (favicon) -->
+    
     <link rel="icon" type="image/png" href="images/icon.png">
     <link rel="shortcut icon" type="image/png" href="images/icon.png">
+    
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="images/icon.png">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Верхнее меню с магнитиком -->
     <header>
         <button id="menu-btn" aria-label="Меню">
             <img src="images/happy_smiley_magnit.png" alt="Меню" id="magnet-img">
         </button>
     </header>
 
-    <!-- Выдвижное меню -->
     <aside id="side-menu" class="hidden">
         <div class="menu-header">
             <img src="images/icon.png" alt="Корзинка" class="app-icon">
             <h2>Корзинка</h2>
         </div>
         
-        <!-- Переключение меню: Планы / Статистика -->
         <div class="menu-tabs">
             <button id="menu-tab-plans" class="menu-tab active">Планы</button>
             <button id="menu-tab-stats" class="menu-tab">Статистика</button>
         </div>
 
-        <!-- Список планов -->
-        <div id="menu-plans-view">
-            <ul id="saved-plans-list">
-                <!-- Сюда будут сохраняться планы -->
-            </ul>
+        <div id="plans-controls">
+            <button id="select-mode-btn" class="small-btn">☑ Выбрать</button>
+            <div id="select-mode-actions" class="hidden">
+                <button id="cancel-select-btn" class="small-btn cancel">Отмена</button>
+                <button id="delete-selected-btn" class="small-btn danger">Удалить выбранные</button>
+            </div>
         </div>
 
-        <!-- Статистика за месяц -->
+        <div id="menu-plans-view">
+            <ul id="saved-plans-list"></ul>
+        </div>
+
         <div id="menu-stats-view" class="hidden">
             <div class="stats-month-selector">
                 <button id="prev-month-btn">◀</button>
@@ -52,48 +54,51 @@
                 <h3 id="stats-total-sum">0 ₽</h3>
                 <p id="stats-plans-count">0 планов</p>
             </div>
-            <ul id="stats-plans-list">
-                <!-- Планы за выбранный месяц -->
-            </ul>
+            <ul id="stats-plans-list"></ul>
         </div>
 
         <button id="close-menu-btn">Закрыть</button>
     </aside>
 
-    <!-- Основной контент -->
     <main>
-        <!-- Вкладки -->
         <div class="tabs">
             <button id="tab-plan" class="tab active">Планирование</button>
             <button id="tab-shop" class="tab">Выполнение</button>
         </div>
 
-        <!-- Экран планирования -->
+        <!-- ЭКРАН ПЛАНИРОВАНИЯ -->
         <section id="view-plan" class="view active">
             <h2 id="plan-title">Новый список</h2>
             
             <div class="add-item-form">
                 <input type="text" id="new-item-input" placeholder="Что купить?">
-                <input type="text" id="new-qty-input" placeholder="Кол-во">
-                <input type="number" id="new-price-input" placeholder="Цена" min="0" step="0.01">
+                <div class="qty-group">
+                    <input type="number" id="new-qty-input" placeholder="Кол-во" min="0" step="0.001" value="1">
+                    <select id="new-unit-select">
+                        <option value="шт">шт</option>
+                        <option value="кг">кг</option>
+                        <option value="г">г</option>
+                        <option value="л">л</option>
+                        <option value="мл">мл</option>
+                        <option value="уп">уп</option>
+                    </select>
+                </div>
+                <input type="number" id="new-price-input" placeholder="₽/ед" min="0" step="0.01">
                 <button id="add-btn">+</button>
             </div>
 
             <div class="list-container">
                 <img src="images/list.png" alt="Листик" class="list-bg">
-                <ul id="planning-list" class="items-list">
-                    <!-- Пункты будут здесь -->
-                </ul>
+                <ul id="planning-list" class="items-list"></ul>
             </div>
             
             <button id="start-shopping-btn" class="main-btn">Сохранить и Начать</button>
         </section>
 
-        <!-- Экран выполнения -->
+        <!-- ЭКРАН ВЫПОЛНЕНИЯ -->
         <section id="view-shop" class="view">
             <h2>В магазине</h2>
             
-            <!-- Заглушка, если нет активного плана -->
             <div id="no-active-plan" class="empty-state">
                 <img src="images/icon.png" alt="Корзинка" class="empty-icon">
                 <p>Нет активного плана</p>
@@ -101,13 +106,10 @@
                 <button class="main-btn" onclick="document.getElementById('tab-plan').click()">Создать список</button>
             </div>
 
-            <!-- Активный план -->
             <div id="active-plan-content" class="hidden">
                 <div class="list-container">
                     <img src="images/list.png" alt="Листик" class="list-bg">
-                    <ul id="shopping-list" class="items-list">
-                        <!-- Пункты будут здесь -->
-                    </ul>
+                    <ul id="shopping-list" class="items-list"></ul>
                 </div>
 
                 <div id="progress-container">
@@ -116,11 +118,12 @@
                 <p id="progress-text">0 из 0 выполнено</p>
                 
                 <p id="total-sum-text">Сумма: 0 ₽</p>
+                
+                <button id="delete-active-plan-btn" class="delete-active-btn">🗑 Удалить этот план</button>
             </div>
         </section>
     </main>
 
-    <!-- Регистрация Service Worker для PWA -->
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
