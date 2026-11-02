@@ -124,7 +124,6 @@
 
             <!-- Активный план -->
             <div id="active-plan-content" class="hidden">
-                <!-- Листик + панель цен -->
                 <div class="list-wrapper">
                     <div class="list-paper">
                         <img src="images/list.png" alt="Листик" class="list-bg">
@@ -146,6 +145,21 @@
             </div>
         </section>
     </main>
+
+    <!-- Модальное окно для просмотра деталей плана -->
+    <div id="plan-details-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-plan-title">Название плана</h3>
+                <button id="modal-close-btn" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <p id="modal-plan-date" class="modal-date"></p>
+                <ul id="modal-items-list" class="modal-items-list"></ul>
+                <div id="modal-plan-summary" class="modal-summary"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- Регистрация Service Worker для PWA -->
     <script>
