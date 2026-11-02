@@ -2,13 +2,14 @@ let state = {
     plans: JSON.parse(localStorage.getItem('korzinka_plans')) || [],
     activePlanId: localStorage.getItem('korzinka_active_id') || null,
     currentItems: [],
-    isShopping: false
+    isShopping: false,
+    statsMonth: new Date() // Текущий отображаемый месяц в статистике
 };
 
 const tabs = document.querySelectorAll('.tab');
 const views = document.querySelectorAll('.view');
 const addInput = document.getElementById('new-item-input');
-const addQtyInput = document.getElementById('new-qty-input'); // НОВОЕ
+const addQtyInput = document.getElementById('new-qty-input');
 const addPriceInput = document.getElementById('new-price-input');
 const addBtn = document.getElementById('add-btn');
 const planningList = document.getElementById('planning-list');
@@ -21,7 +22,22 @@ const menuBtn = document.getElementById('menu-btn');
 const sideMenu = document.getElementById('side-menu');
 const closeMenuBtn = document.getElementById('close-menu-btn');
 const savedPlansList = document.getElementById('saved-plans-list');
+const noActivePlan = document.getElementById('no-active-plan');
+const activePlanContent = document.getElementById('active-plan-content');
 
+// Статистика
+const menuTabPlans = document.getElementById('menu-tab-plans');
+const menuTabStats = document.getElementById('menu-tab-stats');
+const menuPlansView = document.getElementById('menu-plans-view');
+const menuStatsView = document.getElementById('menu-stats-view');
+const prevMonthBtn = document.getElementById('prev-month-btn');
+const nextMonthBtn = document.getElementById('next-month-btn');
+const currentMonthLabel = document.getElementById('current-month-label');
+const statsTotalSum = document.getElementById('stats-total-sum');
+const statsPlansCount = document.getElementById('stats-plans-count');
+const statsPlansList = document.getElementById('stats-plans-list');
+
+// --- НАВИГАЦИЯ ПО ВКЛАДКАМ ---
 tabs.forEach(tab => {
     tab.addEventListener('click', () => {
         tabs.forEach(t => t.classList.remove('active'));
@@ -32,6 +48,7 @@ tabs.forEach(tab => {
     });
 });
 
+// --- ХЕЛПЕРЫ ---
 function formatPrice(price) {
     if (!price && price !== 0) return '';
     return new Intl.NumberFormat('ru-RU', { 
@@ -40,7 +57,6 @@ function formatPrice(price) {
 }
 
 // --- ПЛАНИРОВАНИЕ ---
-
 addBtn.addEventListener('click', addItem);
 addInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addItem(); });
 addQtyInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addItem(); });
@@ -53,12 +69,12 @@ function addItem() {
     if (!text) return;
 
     const price = priceValue === '' ? null : parseFloat(priceValue);
-    const qty = qtyValue === '' ? null : qtyValue; // НОВОЕ: количество как текст (можно "2 уп", "500 г")
+    const qty = qtyValue === '' ? null : qtyValue;
 
     state.currentItems.push({
         id: Date.now().toString(),
         name: text,
-        qty: qty, // НОВОЕ
+        qty: qty,
         price: isNaN(price) ? null : price,
         checked: false
     });
@@ -105,9 +121,10 @@ startShoppingBtn.addEventListener('click', () => {
 
     const newPlan = {
         id: Date.now().toString(),
-        name: `План от ${new Date().toLocaleDateString()}`,
+        name: `План от ${new Date().toLocaleDateString('ru-RU')}`,
         items: [...state.currentItems],
-        date: new Date().toLocaleString()
+        date: new Date().toLocaleString('ru-RU'),
+        createdAt: new Date().toISOString() // Для группировки по месяцам
     };
 
     state.plans.push(newPlan);
@@ -123,10 +140,17 @@ startShoppingBtn.addEventListener('click', () => {
 });
 
 // --- ВЫПОЛНЕНИЕ ---
-
 function renderShoppingList() {
     const activePlan = state.plans.find(p => p.id === state.activePlanId);
-    if (!activePlan) return;
+    
+    if (!activePlan) {
+        noActivePlan.classList.remove('hidden');
+        activePlanContent.classList.add('hidden');
+        return;
+    }
+
+    noActivePlan.classList.add('hidden');
+    activePlanContent.classList.remove('hidden');
 
     shoppingList.innerHTML = '';
     let checkedCount = 0;
@@ -186,9 +210,11 @@ function updateProgress(checked, total) {
 }
 
 // --- МЕНЮ ---
-
 menuBtn.addEventListener('click', () => {
     renderSavedPlans();
+    renderStats();
+    // По умолчанию открываем вкладку "Планы"
+    switchMenuTab('plans');
     sideMenu.classList.remove('hidden');
 });
 
@@ -196,10 +222,34 @@ closeMenuBtn.addEventListener('click', () => {
     sideMenu.classList.add('hidden');
 });
 
+// Переключение между вкладками меню
+menuTabPlans.addEventListener('click', () => switchMenuTab('plans'));
+menuTabStats.addEventListener('click', () => switchMenuTab('stats'));
+
+function switchMenuTab(tab) {
+    if (tab === 'plans') {
+        menuTabPlans.classList.add('active');
+        menuTabStats.classList.remove('active');
+        menuPlansView.classList.remove('hidden');
+        menuStatsView.classList.add('hidden');
+    } else {
+        menuTabPlans.classList.remove('active');
+        menuTabStats.classList.add('active');
+        menuPlansView.classList.add('hidden');
+        menuStatsView.classList.remove('hidden');
+        renderStats();
+    }
+}
+
 function renderSavedPlans() {
     savedPlansList.innerHTML = '';
     const reversedPlans = [...state.plans].reverse();
     
+    if (reversedPlans.length === 0) {
+        savedPlansList.innerHTML = '<p class="stats-empty">Пока нет сохранённых планов</p>';
+        return;
+    }
+
     reversedPlans.forEach(plan => {
         const checked = plan.items.filter(i => i.checked).length;
         const total = plan.items.length;
@@ -245,6 +295,78 @@ window.resumePlan = function(planId) {
     document.getElementById('tab-shop').click();
 };
 
+// --- СТАТИСТИКА ---
+
+// Переключение месяца
+prevMonthBtn.addEventListener('click', () => {
+    state.statsMonth.setMonth(state.statsMonth.getMonth() - 1);
+    renderStats();
+});
+
+nextMonthBtn.addEventListener('click', () => {
+    state.statsMonth.setMonth(state.statsMonth.getMonth() + 1);
+    renderStats();
+});
+
+function renderStats() {
+    const year = state.statsMonth.getFullYear();
+    const month = state.statsMonth.getMonth();
+    
+    // Красивое название месяца
+    const monthName = state.statsMonth.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+    currentMonthLabel.textContent = monthName;
+
+    // Фильтруем планы за этот месяц
+    const monthPlans = state.plans.filter(plan => {
+        const planDate = plan.createdAt ? new Date(plan.createdAt) : new Date(plan.date);
+        return planDate.getFullYear() === year && planDate.getMonth() === month;
+    });
+
+    // Считаем общую сумму и количество
+    let totalSum = 0;
+    monthPlans.forEach(plan => {
+        plan.items.forEach(item => {
+            if (item.checked && item.price) totalSum += item.price;
+        });
+    });
+
+    statsTotalSum.textContent = formatPrice(totalSum) || '0 ₽';
+    statsPlansCount.textContent = `${monthPlans.length} ${pluralize(monthPlans.length, 'план', 'плана', 'планов')}`;
+
+    // Список планов
+    statsPlansList.innerHTML = '';
+    
+    if (monthPlans.length === 0) {
+        statsPlansList.innerHTML = '<p class="stats-empty">За этот месяц нет покупок</p>';
+        return;
+    }
+
+    monthPlans.reverse().forEach(plan => {
+        const checked = plan.items.filter(i => i.checked).length;
+        const total = plan.items.length;
+        const planSpent = plan.items.filter(i => i.checked).reduce((acc, i) => acc + (i.price || 0), 0);
+        const planTotal = plan.items.reduce((acc, i) => acc + (i.price || 0), 0);
+        
+        const li = document.createElement('li');
+        li.className = 'plan-item';
+        li.innerHTML = `
+            <h3>${plan.name}</h3>
+            <p>Куплено: ${checked} из ${total}</p>
+            ${planTotal > 0 ? `<p class="plan-sum">${formatPrice(planSpent)} / ${formatPrice(planTotal)}</p>` : ''}
+        `;
+        statsPlansList.appendChild(li);
+    });
+}
+
+// Склонение слова "план"
+function pluralize(n, one, few, many) {
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+    return many;
+}
+
 // --- ПАМЯТЬ ---
 
 function saveToLocalStorage() {
@@ -253,10 +375,7 @@ function saveToLocalStorage() {
 }
 
 function init() {
-    const activePlan = state.plans.find(p => p.id === state.activePlanId);
-    if (activePlan) {
-        renderShoppingList();
-    }
+    renderShoppingList();
 }
 
 init();
