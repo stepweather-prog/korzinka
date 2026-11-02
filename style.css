@@ -164,13 +164,13 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 }
 .planning-controls.hidden { display: none; }
 
-/* ===== ТЕТРАДНЫЙ ЛИСТ (550x600) ===== */
+/* ===== ШИРОКИЙ ЛИСТ (на всю доступную ширину) ===== */
 .list-wrapper {
     position: relative;
     display: flex;
     width: 100%;
-    max-width: 550px;       /* Узкий, как в первом варианте */
-    min-height: 600px;      /* Высокий */
+    max-width: 100%;        /* Убрал ограничение, теперь тянется насколько может */
+    min-height: 500px;      /* Высоту оставил, чтобы лист был большим */
     margin: 0 auto 20px auto;
     align-items: stretch;
     flex-wrap: nowrap;
