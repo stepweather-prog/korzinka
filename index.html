@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Корзинка</title>
+     <!-- Иконка на вкладке браузера (favicon) -->
+    <link rel="icon" type="image/png" href="images/icon.png">
+    <link rel="shortcut icon" type="image/png" href="images/icon.png">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="images/icon.png">
     <link rel="stylesheet" href="style.css">
@@ -21,11 +24,39 @@
     <aside id="side-menu" class="hidden">
         <div class="menu-header">
             <img src="images/icon.png" alt="Корзинка" class="app-icon">
-            <h2>Мои планы</h2>
+            <h2>Корзинка</h2>
         </div>
-        <ul id="saved-plans-list">
-            <!-- Сюда будут сохраняться планы -->
-        </ul>
+        
+        <!-- Переключение меню: Планы / Статистика -->
+        <div class="menu-tabs">
+            <button id="menu-tab-plans" class="menu-tab active">Планы</button>
+            <button id="menu-tab-stats" class="menu-tab">Статистика</button>
+        </div>
+
+        <!-- Список планов -->
+        <div id="menu-plans-view">
+            <ul id="saved-plans-list">
+                <!-- Сюда будут сохраняться планы -->
+            </ul>
+        </div>
+
+        <!-- Статистика за месяц -->
+        <div id="menu-stats-view" class="hidden">
+            <div class="stats-month-selector">
+                <button id="prev-month-btn">◀</button>
+                <span id="current-month-label">Месяц</span>
+                <button id="next-month-btn">▶</button>
+            </div>
+            <div class="stats-summary">
+                <p>Потрачено:</p>
+                <h3 id="stats-total-sum">0 ₽</h3>
+                <p id="stats-plans-count">0 планов</p>
+            </div>
+            <ul id="stats-plans-list">
+                <!-- Планы за выбранный месяц -->
+            </ul>
+        </div>
+
         <button id="close-menu-btn">Закрыть</button>
     </aside>
 
@@ -62,20 +93,30 @@
         <section id="view-shop" class="view">
             <h2>В магазине</h2>
             
-            <div class="list-container">
-                <img src="images/list.png" alt="Листик" class="list-bg">
-                <ul id="shopping-list" class="items-list">
-                    <!-- Пункты будут здесь -->
-                </ul>
+            <!-- Заглушка, если нет активного плана -->
+            <div id="no-active-plan" class="empty-state">
+                <img src="images/icon.png" alt="Корзинка" class="empty-icon">
+                <p>Нет активного плана</p>
+                <p class="empty-hint">Создайте список во вкладке «Планирование»<br>или выберите сохранённый план в меню</p>
+                <button class="main-btn" onclick="document.getElementById('tab-plan').click()">Создать список</button>
             </div>
 
-            <div id="progress-container">
-                <div id="progress-bar"></div>
+            <!-- Активный план -->
+            <div id="active-plan-content" class="hidden">
+                <div class="list-container">
+                    <img src="images/list.png" alt="Листик" class="list-bg">
+                    <ul id="shopping-list" class="items-list">
+                        <!-- Пункты будут здесь -->
+                    </ul>
+                </div>
+
+                <div id="progress-container">
+                    <div id="progress-bar"></div>
+                </div>
+                <p id="progress-text">0 из 0 выполнено</p>
+                
+                <p id="total-sum-text">Сумма: 0 ₽</p>
             </div>
-            <p id="progress-text">0 из 0 выполнено</p>
-            
-            <!-- Итоговая сумма -->
-            <p id="total-sum-text">Сумма: 0 ₽</p>
         </section>
     </main>
 
