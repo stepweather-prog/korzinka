@@ -493,11 +493,59 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 @media (max-width: 480px) {
     .add-item-form { flex-wrap: wrap; justify-content: center; }
     #new-item-input { width: 100%; flex-basis: 100%; order: 1; }
-    #new-qty-input { width: 90px; order: 2; }
-    #new-price-input { width: 110px; order: 3; }
+    .qty-group { order: 2; }
+    #new-price-input { width: 100px; order: 3; }
     #add-btn { order: 4; }
-    .items-list { padding: 40px 22px 25px 22px; }
-    .list-item { font-size: 15px; gap: 6px; }
-    .item-qty, .item-price { font-size: 13px; }
-    .item-qty { padding: 2px 6px; }
+
+    .items-list { padding: 38px 16px 20px 16px; }
+    .list-item { font-size: 13px; gap: 4px; }
+    .item-qty { font-size: 11px; padding: 1px 5px; }
+    .item-price { font-size: 12px; }
+    .checkbox-img { width: 22px; height: 22px; }
+    .delete-btn { font-size: 14px; }
+}
+/* Группа «Кол-во + единица» */
+.qty-group {
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 20px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+    flex-shrink: 0;
+    height: 42px;
+}
+
+#new-qty-input {
+    width: 55px;
+    padding: 10px 6px;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    text-align: center;
+    background: transparent;
+}
+
+#new-unit-select {
+    border: none;
+    outline: none;
+    background: #f0f0f0;
+    padding: 0 6px;
+    height: 100%;
+    font-size: 13px;
+    font-weight: bold;
+    color: #555;
+    cursor: pointer;
+}
+
+/* Убираем стрелки у input[type=number] */
+#new-qty-input::-webkit-outer-spin-button,
+#new-qty-input::-webkit-inner-spin-button,
+#new-price-input::-webkit-outer-spin-button,
+#new-price-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+#new-qty-input, #new-price-input {
+    -moz-appearance: textfield;
 }
