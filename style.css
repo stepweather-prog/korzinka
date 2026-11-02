@@ -1,11 +1,173 @@
-/* Обёртка: две колонки */
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+
+body {
+    background-image: url('images/lit_cozy.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #333;
+}
+
+header {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding-top: 15px;
+    position: relative;
+    z-index: 10;
+}
+
+#menu-btn { background: none; border: none; cursor: pointer; transition: transform 0.2s; }
+#menu-btn:active { transform: scale(0.9); }
+#magnet-img { width: 60px; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
+
+main {
+    width: 100%;
+    max-width: 750px; /* Чуть шире, чтобы две колонки помещались */
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-grow: 1;
+}
+
+/* Вкладки */
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 5px;
+    border-radius: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 5;
+}
+
+.tab {
+    padding: 8px 16px;
+    border: none;
+    background: none;
+    border-radius: 15px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #777;
+}
+
+.tab.active { background: #4CAF50; color: white; }
+
+/* Экраны */
+.view { display: none; width: 100%; flex-direction: column; align-items: center; }
+.view.active { display: flex; }
+
+h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6); }
+
+/* Форма добавления */
+.add-item-form {
+    display: flex;
+    width: 100%;
+    max-width: 700px;
+    gap: 8px;
+    margin-bottom: 20px;
+    align-items: center;
+    justify-content: center;
+}
+
+#new-item-input {
+    flex-grow: 1;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 20px;
+    outline: none;
+    font-size: 16px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    min-width: 0;
+    height: 42px;
+}
+
+/* Группа «Кол-во + единица» */
+.qty-group {
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 20px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+    flex-shrink: 0;
+    height: 42px;
+}
+
+#new-qty-input {
+    width: 55px;
+    padding: 10px 6px;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    text-align: center;
+    background: transparent;
+}
+
+#new-unit-select {
+    border: none;
+    outline: none;
+    background: #f0f0f0;
+    padding: 0 6px;
+    height: 100%;
+    font-size: 13px;
+    font-weight: bold;
+    color: #555;
+    cursor: pointer;
+}
+
+#new-price-input {
+    padding: 10px 8px;
+    border: none;
+    border-radius: 20px;
+    outline: none;
+    font-size: 15px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+    flex-shrink: 0;
+    width: 90px;
+    height: 42px;
+}
+
+/* Убираем стрелки у number-input */
+#new-qty-input::-webkit-outer-spin-button,
+#new-qty-input::-webkit-inner-spin-button,
+#new-price-input::-webkit-outer-spin-button,
+#new-price-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+#new-qty-input, #new-price-input { -moz-appearance: textfield; }
+
+#add-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: none;
+    background: #4CAF50;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+/* ===== ДВЕ КОЛОНКИ: ЛИСТИК + ПАНЕЛЬ ЦЕН ===== */
 .list-wrapper {
     display: flex;
     width: 100%;
     max-width: 700px;
     margin: 0 auto 20px auto;
-    gap: 0;
     align-items: stretch;
+    /* На случай узкого экрана — разрешаем перенос */
+    flex-wrap: nowrap;
 }
 
 /* Левая колонка — листик */
@@ -13,6 +175,7 @@
     position: relative;
     flex: 1 1 65%;
     min-height: 450px;
+    min-width: 0;
 }
 
 .list-bg {
@@ -30,15 +193,15 @@
     position: relative;
     z-index: 2;
     list-style: none;
-    padding: 45px 20px 25px 28px;
+    padding: 45px 16px 25px 26px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 0; /* Высоту задаём через li */
     width: 100%;
     box-sizing: border-box;
 }
 
-/* Правая колонка — цены */
+/* Правая колонка — панель цен */
 .price-panel {
     flex: 1 1 35%;
     background: rgba(255, 255, 255, 0.75);
@@ -48,6 +211,7 @@
     box-sizing: border-box;
     box-shadow: 0 5px 15px rgba(0,0,0,0.15);
     display: flex;
+    min-width: 0;
 }
 
 .prices-list {
@@ -55,19 +219,19 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 0;
     box-sizing: border-box;
 }
 
-/* Строки совпадают — выравниваем по высоте */
+/* Синхронизация высоты строк между колонками */
 .items-list > li,
 .prices-list > li {
-    height: 34px; /* фиксированная высота для синхронизации */
+    height: 34px;
     display: flex;
     align-items: center;
-    border-bottom: 1px solid transparent; /* можно убрать */
     box-sizing: border-box;
     overflow: hidden;
+    border-bottom: 1px solid transparent;
 }
 
 .prices-list > li {
@@ -78,7 +242,12 @@
     white-space: nowrap;
 }
 
-/* Пункт списка в левой колонке */
+.prices-list > li.done {
+    color: #999;
+    text-decoration: line-through;
+}
+
+/* Пункт левого списка */
 .list-item {
     display: flex;
     align-items: center;
@@ -87,18 +256,18 @@
     font-weight: 500;
     color: #333;
     width: 100%;
-    line-height: 1.3;
-    overflow: hidden;
+    line-height: 1.2;
+    min-width: 0;
 }
 
 .list-item.done { text-decoration: line-through; color: #888; }
 
 .item-name {
-    flex: 0 1 auto;
+    flex: 1 1 auto;
     min-width: 0;
-    overflow-wrap: break-word;
-    word-break: break-word;
-    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .item-qty {
@@ -130,16 +299,295 @@
     margin-left: auto;
 }
 
-/* Адаптивность: на узких экранах панель уходит вниз */
+/* ===== КНОПКИ, ПРОГРЕСС, СУММА ===== */
+.main-btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 25px;
+    background: #4CAF50;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    margin-bottom: 20px;
+}
+
+#progress-container {
+    width: 80%;
+    height: 15px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+#progress-bar {
+    height: 100%;
+    background: #4CAF50;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+#progress-text {
+    color: #fff;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+#total-sum-text {
+    color: #fff;
+    font-weight: bold;
+    font-size: 18px;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+    margin-top: 5px;
+    margin-bottom: 15px;
+    text-align: center;
+    padding: 0 10px;
+}
+
+.delete-active-btn {
+    background: rgba(255, 82, 82, 0.9);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
+
+/* ===== ЗАГЛУШКА «НЕТ АКТИВНОГО ПЛАНА» ===== */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    width: 90%;
+    max-width: 450px;
+}
+
+.empty-icon {
+    width: 100px;
+    height: 100px;
+    border-radius: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.empty-state p { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 8px; }
+.empty-state .empty-hint { font-size: 14px; font-weight: normal; color: #777; margin-bottom: 20px; line-height: 1.4; }
+.empty-state .main-btn { margin-bottom: 0; font-size: 16px; padding: 10px 24px; }
+
+/* ===== МЕНЮ ===== */
+#side-menu {
+    position: fixed;
+    top: 0; left: 0;
+    width: 85%; max-width: 380px;
+    height: 100vh;
+    background: white;
+    z-index: 100;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+    padding: 20px;
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+}
+
+#side-menu.hidden { transform: translateX(-100%); }
+
+.menu-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 15px;
+}
+
+.app-icon { width: 50px; height: 50px; border-radius: 10px; }
+
+.menu-tabs {
+    display: flex;
+    gap: 5px;
+    background: #f0f0f0;
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 15px;
+}
+
+.menu-tab {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    background: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #777;
+    font-size: 14px;
+}
+
+.menu-tab.active { background: white; color: #4CAF50; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+#plans-controls { margin-bottom: 12px; }
+
+.small-btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 10px;
+    background: #f0f0f0;
+    color: #333;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.small-btn.cancel { background: #e0e0e0; color: #555; }
+.small-btn.danger { background: #ff5252; color: white; }
+
+#select-mode-actions { display: inline-flex; gap: 5px; }
+
+#saved-plans-list, #stats-plans-list { list-style: none; }
+
+.plan-item {
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.plan-item.selectable { flex-direction: row; align-items: flex-start; gap: 10px; }
+
+.plan-item .plan-checkbox {
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+
+.plan-item .plan-content { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.plan-item h3 { margin-bottom: 5px; color: #333; font-size: 16px; word-break: break-word; }
+.plan-item p { font-size: 14px; color: #777; margin-bottom: 5px; }
+.plan-sum { font-size: 14px; color: #4CAF50; font-weight: bold; margin-bottom: 5px; }
+
+.plan-progress {
+    height: 5px;
+    background: #ddd;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.plan-progress-bar { height: 100%; background: #4CAF50; }
+
+/* ===== СТАТИСТИКА ===== */
+.stats-month-selector {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f0f0f0;
+    border-radius: 12px;
+    padding: 8px;
+    margin-bottom: 15px;
+}
+
+.stats-month-selector button {
+    background: white;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+#current-month-label {
+    font-weight: bold;
+    color: #333;
+    text-transform: capitalize;
+    font-size: 15px;
+}
+
+.stats-summary {
+    background: linear-gradient(135deg, #4CAF50, #66BB6A);
+    color: white;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.stats-summary p { font-size: 13px; opacity: 0.9; }
+.stats-summary h3 { font-size: 26px; margin: 5px 0; }
+
+.stats-empty {
+    text-align: center;
+    color: #999;
+    padding: 30px 10px;
+    font-size: 14px;
+}
+
+#close-menu-btn {
+    width: 100%;
+    padding: 10px;
+    background: #ddd;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+.hidden { display: none !important; }
+
+/* ===== АДАПТИВ ===== */
 @media (max-width: 640px) {
+    /* Форма: в две строки */
+    .add-item-form { flex-wrap: wrap; }
+    #new-item-input { width: 100%; flex-basis: 100%; order: 1; }
+    .qty-group { order: 2; flex: 1 1 auto; }
+    #new-price-input { width: 90px; order: 3; }
+    #add-btn { order: 4; }
+
+    /* Колонки: панель цен уходит вниз */
     .list-wrapper { flex-direction: column; max-width: 95%; }
     .list-paper { min-height: 350px; }
     .list-bg { border-radius: 10px 10px 0 0; }
     .price-panel {
         border-radius: 0 0 10px 10px;
-        padding: 10px 15px 15px 15px;
+        padding: 10px 16px 15px 16px;
+        flex: 1 1 auto;
     }
-    .items-list { padding: 45px 18px 20px 22px; }
-    /* на мобилке синхронизация колонок по строкам не нужна — они идут подряд */
-    .items-list > li, .prices-list > li { height: auto; }
+    .items-list { padding: 40px 14px 15px 20px; }
+    .prices-list {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 4px 10px;
+    }
+    /* На мобилке синхронизация не нужна — цены идут строчкой под листиком */
+    .items-list > li { height: auto; padding: 4px 0; }
+    .prices-list > li {
+        height: auto;
+        border-bottom: none;
+        font-size: 13px;
+        justify-content: flex-start;
+    }
+    .prices-list > li::after { content: ' ₽'; font-size: 12px; }
+    .prices-list > li:empty { display: none; }
+    .item-name { font-size: 14px; }
+    .item-qty { font-size: 11px; }
 }
