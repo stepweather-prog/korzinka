@@ -52,6 +52,14 @@ const selectModeActions = document.getElementById('select-mode-actions');
 const cancelSelectBtn = document.getElementById('cancel-select-btn');
 const deleteSelectedBtn = document.getElementById('delete-selected-btn');
 
+// Модальное окно
+const modal = document.getElementById('plan-details-modal');
+const modalTitle = document.getElementById('modal-plan-title');
+const modalDate = document.getElementById('modal-plan-date');
+const modalItemsList = document.getElementById('modal-items-list');
+const modalSummary = document.getElementById('modal-plan-summary');
+const modalCloseBtn = document.getElementById('modal-close-btn');
+
 // --- НАВИГАЦИЯ ---
 tabs.forEach(tab => {
     tab.addEventListener('click', () => {
@@ -480,14 +488,73 @@ function renderStats() {
         
         const li = document.createElement('li');
         li.className = 'plan-item';
+        li.style.cursor = 'pointer';
+        li.onclick = () => window.openPlanDetails(plan.id);
         li.innerHTML = `
             <h3>${plan.name}</h3>
             <p>Куплено: ${checked} из ${total}</p>
             ${planTotal > 0 ? `<p class="plan-sum">${formatPrice(planSpent)} / ${formatPrice(planTotal)}</p>` : ''}
+            <p style="font-size:12px; color:#4CAF50; margin-top:5px;">Нажмите, чтобы посмотреть детали ▸</p>
         `;
         statsPlansList.appendChild(li);
     });
 }
+
+// --- МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ ПЛАНА ---
+window.openPlanDetails = function(planId) {
+    const plan = state.plans.find(p => p.id === planId);
+    if (!plan) return;
+
+    modalTitle.textContent = plan.name;
+    modalDate.textContent = `Создан: ${plan.date || new Date(plan.createdAt).toLocaleString('ru-RU')}`;
+
+    // Заполняем список продуктов
+    modalItemsList.innerHTML = '';
+    plan.items.forEach(item => {
+        const li = document.createElement('li');
+        const imgSrc = item.checked ? 'images/check_mark.png' : 'images/tick_a_box.png';
+        li.innerHTML = `
+            <img src="${imgSrc}" class="modal-item-check">
+            <span class="modal-item-name ${item.checked ? 'checked' : ''}">${item.name}</span>
+            <span class="modal-item-qty">${getQtyLabel(item)}</span>
+            ${item.price ? `<span class="modal-item-price">${formatPrice(getItemTotal(item))}</span>` : ''}
+        `;
+        modalItemsList.appendChild(li);
+    });
+
+    // Считаем итоги
+    const totalSum = plan.items.reduce((acc, i) => acc + getItemTotal(i), 0);
+    const spentSum = plan.items.filter(i => i.checked).reduce((acc, i) => acc + getItemTotal(i), 0);
+    const checkedCount = plan.items.filter(i => i.checked).length;
+
+    modalSummary.innerHTML = `
+        <p>Куплено: <b>${checkedCount} из ${plan.items.length}</b></p>
+        ${totalSum > 0 ? `
+            <p>Потрачено: <span class="modal-spent">${formatPrice(spentSum)}</span></p>
+            <p>Всего по плану: <span class="modal-total">${formatPrice(totalSum)}</span></p>
+        ` : ''}
+    `;
+
+    modal.classList.remove('hidden');
+};
+
+modalCloseBtn.addEventListener('click', () => {
+    modal.classList.add('hidden');
+});
+
+// Клик по фону закрывает модалку
+modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+        modal.classList.add('hidden');
+    }
+});
+
+// Esc закрывает модалку
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        modal.classList.add('hidden');
+    }
+});
 
 // --- ПАМЯТЬ ---
 function saveToLocalStorage() {
