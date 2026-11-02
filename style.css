@@ -33,7 +33,7 @@ header {
 
 main {
     width: 100%;
-    max-width: 600px; /* Шире контейнер для ПК */
+    max-width: 600px;
     padding: 10px;
     display: flex;
     flex-direction: column;
@@ -255,11 +255,55 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     margin-bottom: 15px;
 }
 
+/* Заглушка "Нет активного плана" */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    width: 90%;
+    max-width: 450px;
+}
+
+.empty-icon {
+    width: 100px;
+    height: 100px;
+    border-radius: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.empty-state p {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.empty-state .empty-hint {
+    font-size: 14px;
+    font-weight: normal;
+    color: #777;
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+.empty-state .main-btn {
+    margin-bottom: 0;
+    font-size: 16px;
+    padding: 10px 24px;
+}
+
 /* Выдвижное меню */
 #side-menu {
     position: fixed;
     top: 0; left: 0;
-    width: 80%; max-width: 350px;
+    width: 85%; max-width: 380px;
     height: 100vh;
     background: white;
     z-index: 100;
@@ -275,21 +319,44 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     display: flex;
     align-items: center;
     gap: 15px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     border-bottom: 1px solid #ddd;
     padding-bottom: 15px;
 }
 
 .app-icon { width: 50px; height: 50px; border-radius: 10px; }
 
-#saved-plans-list { list-style: none; }
+/* Переключатель меню Планы/Статистика */
+.menu-tabs {
+    display: flex;
+    gap: 5px;
+    background: #f0f0f0;
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 15px;
+}
+
+.menu-tab {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    background: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #777;
+    font-size: 14px;
+}
+
+.menu-tab.active { background: white; color: #4CAF50; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+#saved-plans-list, #stats-plans-list { list-style: none; }
 
 .plan-item {
     padding: 15px;
     background: #f9f9f9;
     border-radius: 10px;
     margin-bottom: 10px;
-    cursor: pointer;
     display: flex;
     flex-direction: column;
 }
@@ -308,6 +375,55 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 
 .plan-progress-bar { height: 100%; background: #4CAF50; }
 
+/* Статистика */
+.stats-month-selector {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f0f0f0;
+    border-radius: 12px;
+    padding: 8px;
+    margin-bottom: 15px;
+}
+
+.stats-month-selector button {
+    background: white;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+#current-month-label {
+    font-weight: bold;
+    color: #333;
+    text-transform: capitalize;
+    font-size: 15px;
+}
+
+.stats-summary {
+    background: linear-gradient(135deg, #4CAF50, #66BB6A);
+    color: white;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.stats-summary p { font-size: 13px; opacity: 0.9; }
+.stats-summary h3 { font-size: 26px; margin: 5px 0; }
+
+.stats-empty {
+    text-align: center;
+    color: #999;
+    padding: 30px 10px;
+    font-size: 14px;
+}
+
 #close-menu-btn {
     width: 100%;
     padding: 10px;
@@ -318,6 +434,8 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     cursor: pointer;
     margin-top: 20px;
 }
+
+.hidden { display: none !important; }
 
 /* Адаптивность для мобилок */
 @media (max-width: 480px) {
