@@ -1,7 +1,7 @@
 // ===================== СОСТОЯНИЕ =====================
 let state = {
     plans: JSON.parse(localStorage.getItem('korzinka_plans')) || [],
-    history: JSON.parse(localStorage.getItem('korzinka_history')) || [], // Архив для статистики
+    history: JSON.parse(localStorage.getItem('korzinka_history')) || [],
     activePlanId: localStorage.getItem('korzinka_active_id') || null,
     currentItems: [],
     statsMonth: new Date(),
@@ -188,6 +188,14 @@ window.updatePlanningQty = function(id, value) {
     renderPlanningList();
 };
 
+window.updatePlanningPrice = function(id, value) {
+    const item = state.currentItems.find(i => i.id === id);
+    if (!item) return;
+    const price = parseFloat(value);
+    item.price = isNaN(price) || price < 0 ? null : price;
+    renderPlanningList();
+};
+
 window.togglePlanningSelect = function(id) {
     const item = state.currentItems.find(i => i.id === id);
     if (!item) return;
@@ -283,10 +291,8 @@ window.toggleCheck = function(itemId) {
     if (item) {
         item.checked = !item.checked;
 
-        // Если все пункты отмечены — сохраняем копию плана в историю
         const allChecked = activePlan.items.length > 0 && activePlan.items.every(i => i.checked);
         if (allChecked) {
-            // Проверяем, есть ли уже этот план в истории (по id)
             const existsInHistory = state.history.find(p => p.id === activePlan.id);
             if (!existsInHistory) {
                 state.history.push({ ...activePlan, completedAt: new Date().toISOString() });
@@ -295,7 +301,7 @@ window.toggleCheck = function(itemId) {
 
         saveToLocalStorage();
         renderShoppingList();
-        renderStats(); // обновляем статистику
+        renderStats();
     }
 };
 
@@ -313,7 +319,6 @@ deleteActivePlanBtn.addEventListener('click', () => {
     state.activePlanId = null;
     saveToLocalStorage();
     renderShoppingList();
-    // НЕ трогаем state.history
 });
 
 // ===================== РЕНДЕР СТРАНИЦ =====================
@@ -346,8 +351,10 @@ function renderPages(container, pages, mode) {
                     <img src="${imgSrc}" class="item-checkbox" onclick="togglePlanningSelect('${item.id}')" alt="">
                     <span class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
                     <input type="number" class="item-qty-input" value="${item.qty}" min="0" step="0.001"
-                           onchange="updatePlanningQty('${item.id}', this.value)">
+                           onchange="updatePlanningQty('${item.id}', this.value)" placeholder="Кол-во">
                     <span class="item-qty">${item.unit}</span>
+                    <input type="number" class="item-price-input" value="${item.price || ''}" min="0" step="0.01"
+                           onchange="updatePlanningPrice('${item.id}', this.value)" placeholder="₽">
                 `;
             } else {
                 const imgSrc = item.checked ? 'images/check_mark.png' : 'images/tick_a_box.png';
@@ -447,7 +454,6 @@ function deleteSelectedPlans() {
     const count = state.selectedPlans.length;
     if (!confirm(`Удалить ${count} ${pluralize(count, 'план', 'плана', 'планов')}?`)) return;
 
-    // Удаляем из plans, но НЕ трогаем history
     state.plans = state.plans.filter(p => !state.selectedPlans.includes(p.id));
     
     if (state.activePlanId && state.selectedPlans.includes(state.activePlanId)) {
@@ -587,7 +593,6 @@ function renderStats() {
     const monthName = state.statsMonth.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
     currentMonthLabel.textContent = monthName;
 
-    // Берем данные из history
     const monthPlans = state.history.filter(plan => {
         const planDate = new Date(plan.completedAt || plan.createdAt || plan.date);
         return planDate.getFullYear() === year && planDate.getMonth() === month;
@@ -642,7 +647,6 @@ window.deletePlanFromStats = function(planId, event) {
 
 // ===================== МОДАЛЬНОЕ ОКНО =====================
 window.openPlanDetails = function(planId) {
-    // Ищем сначала в plans, потом в history
     const plan = state.plans.find(p => p.id === planId) || state.history.find(p => p.id === planId);
     if (!plan) return;
 
@@ -659,16 +663,16 @@ function renderModalItems(plan) {
     plan.items.forEach(item => {
         const li = document.createElement('li');
         const imgSrc = item.checked ? 'images/check_mark.png' : 'images/tick_a_box.png';
-        const unitPrice = item.price ? formatPrice(item.price) : '—';
         const totalPrice = item.price ? formatPrice(getItemTotal(item)) : '—';
         li.innerHTML = `
             <img src="${imgSrc}" class="modal-item-check">
             <span class="modal-item-name ${item.checked ? 'checked' : ''}">${escapeHtml(item.name)}</span>
             <input type="number" class="modal-item-qty-input" value="${item.qty}" min="0" step="0.001"
-                   onchange="updateModalQty('${item.id}', this.value)">
+                   onchange="updateModalQty('${item.id}', this.value)" placeholder="Кол-во">
             <span class="item-qty" style="font-size:11px;">${item.unit || 'шт'}</span>
+            <input type="number" class="modal-item-price-input" value="${item.price || ''}" min="0" step="0.01"
+                   onchange="updateModalPrice('${item.id}', this.value)" placeholder="₽">
             <div class="modal-item-price-info">
-                <span class="modal-item-unit-price">${unitPrice} × ${item.qty}${item.unit || 'шт'}</span>
                 <span class="modal-item-total">${totalPrice}</span>
             </div>
         `;
@@ -689,7 +693,6 @@ function renderModalItems(plan) {
 }
 
 window.updateModalQty = function(itemId, value) {
-    // Ищем план в plans, затем в history
     let plan = state.plans.find(p => p.id === modalCurrentPlanId);
     if (!plan) plan = state.history.find(p => p.id === modalCurrentPlanId);
     if (!plan) return;
@@ -699,6 +702,26 @@ window.updateModalQty = function(itemId, value) {
 
     const qty = parseFloat(value);
     item.qty = isNaN(qty) || qty < 0 ? 1 : qty;
+    saveToLocalStorage();
+    renderModalItems(plan);
+    
+    if (plan.id === state.activePlanId) {
+        renderShoppingList();
+    }
+    renderStats();
+    renderSavedPlans();
+};
+
+window.updateModalPrice = function(itemId, value) {
+    let plan = state.plans.find(p => p.id === modalCurrentPlanId);
+    if (!plan) plan = state.history.find(p => p.id === modalCurrentPlanId);
+    if (!plan) return;
+
+    const item = plan.items.find(i => i.id === itemId);
+    if (!item) return;
+
+    const price = parseFloat(value);
+    item.price = isNaN(price) || price < 0 ? null : price;
     saveToLocalStorage();
     renderModalItems(plan);
     
@@ -736,7 +759,7 @@ document.addEventListener('keydown', (e) => {
 // ===================== ПАМЯТЬ =====================
 function saveToLocalStorage() {
     localStorage.setItem('korzinka_plans', JSON.stringify(state.plans));
-    localStorage.setItem('korzinka_history', JSON.stringify(state.history)); // <-- Сохраняем историю
+    localStorage.setItem('korzinka_history', JSON.stringify(state.history));
     localStorage.setItem('korzinka_active_id', state.activePlanId || '');
 }
 
