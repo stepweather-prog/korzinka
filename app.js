@@ -2,38 +2,44 @@ let state = {
     plans: JSON.parse(localStorage.getItem('korzinka_plans')) || [],
     activePlanId: localStorage.getItem('korzinka_active_id') || null,
     currentItems: [],
-    isShopping: false,
     statsMonth: new Date(),
-    selectMode: false,           // Режим массового удаления
-    selectedPlans: []            // ID выбранных планов для удаления
+    selectMode: false,
+    selectedPlans: []
 };
 
-// DOM элементы
+// --- DOM ---
 const tabs = document.querySelectorAll('.tab');
 const views = document.querySelectorAll('.view');
 const addInput = document.getElementById('new-item-input');
 const addQtyInput = document.getElementById('new-qty-input');
+const addUnitSelect = document.getElementById('new-unit-select');
 const addPriceInput = document.getElementById('new-price-input');
 const addBtn = document.getElementById('add-btn');
+
 const planningList = document.getElementById('planning-list');
+const planningPrices = document.getElementById('planning-prices');
 const shoppingList = document.getElementById('shopping-list');
+const shoppingPrices = document.getElementById('shopping-prices');
+
 const startShoppingBtn = document.getElementById('start-shopping-btn');
 const progressBar = document.getElementById('progress-bar');
 const progressText = document.getElementById('progress-text');
 const totalSumText = document.getElementById('total-sum-text');
+
 const menuBtn = document.getElementById('menu-btn');
 const sideMenu = document.getElementById('side-menu');
 const closeMenuBtn = document.getElementById('close-menu-btn');
 const savedPlansList = document.getElementById('saved-plans-list');
+
 const noActivePlan = document.getElementById('no-active-plan');
 const activePlanContent = document.getElementById('active-plan-content');
 const deleteActivePlanBtn = document.getElementById('delete-active-plan-btn');
 
-// Статистика
 const menuTabPlans = document.getElementById('menu-tab-plans');
 const menuTabStats = document.getElementById('menu-tab-stats');
 const menuPlansView = document.getElementById('menu-plans-view');
 const menuStatsView = document.getElementById('menu-stats-view');
+
 const prevMonthBtn = document.getElementById('prev-month-btn');
 const nextMonthBtn = document.getElementById('next-month-btn');
 const currentMonthLabel = document.getElementById('current-month-label');
@@ -41,7 +47,6 @@ const statsTotalSum = document.getElementById('stats-total-sum');
 const statsPlansCount = document.getElementById('stats-plans-count');
 const statsPlansList = document.getElementById('stats-plans-list');
 
-// Режим выбора
 const selectModeBtn = document.getElementById('select-mode-btn');
 const selectModeActions = document.getElementById('select-mode-actions');
 const cancelSelectBtn = document.getElementById('cancel-select-btn');
@@ -74,6 +79,19 @@ function pluralize(n, one, few, many) {
     return many;
 }
 
+// Итог по позиции: цена за единицу × количество
+function getItemTotal(item) {
+    if (!item.price) return 0;
+    const qty = item.qty ? parseFloat(item.qty) : 1;
+    return item.price * (isNaN(qty) ? 1 : qty);
+}
+
+// Подпись количества: "2 шт" или "1.5 кг"
+function getQtyLabel(item) {
+    if (!item.qty && item.qty !== 0) return '';
+    return `${item.qty} ${item.unit || 'шт'}`;
+}
+
 // --- ПЛАНИРОВАНИЕ ---
 addBtn.addEventListener('click', addItem);
 addInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addItem(); });
@@ -83,22 +101,25 @@ addPriceInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addIt
 function addItem() {
     const text = addInput.value.trim();
     const qtyValue = addQtyInput.value.trim();
+    const unit = addUnitSelect.value;
     const priceValue = addPriceInput.value.trim();
     if (!text) return;
 
+    const qty = qtyValue === '' ? 1 : parseFloat(qtyValue);
     const price = priceValue === '' ? null : parseFloat(priceValue);
-    const qty = qtyValue === '' ? null : qtyValue;
 
     state.currentItems.push({
         id: Date.now().toString(),
         name: text,
-        qty: qty,
+        qty: isNaN(qty) ? 1 : qty,
+        unit: unit,
         price: isNaN(price) ? null : price,
         checked: false
     });
     
     addInput.value = '';
-    addQtyInput.value = '';
+    addQtyInput.value = '1';
+    addUnitSelect.value = 'шт';
     addPriceInput.value = '';
     addInput.focus();
     renderPlanningList();
@@ -106,20 +127,27 @@ function addItem() {
 
 function renderPlanningList() {
     planningList.innerHTML = '';
+    planningPrices.innerHTML = '';
     let sum = 0;
     
     state.currentItems.forEach(item => {
-        if (item.price) sum += item.price;
-        
+        const itemTotal = getItemTotal(item);
+        sum += itemTotal;
+
+        // Левая колонка
         const li = document.createElement('li');
         li.className = 'list-item';
         li.innerHTML = `
-            <span class="item-name">${item.name}</span>
-            ${item.qty ? `<span class="item-qty">${item.qty}</span>` : ''}
-            ${item.price ? `<span class="item-price">${formatPrice(item.price)}</span>` : ''}
+            <span class="item-name" title="${item.name}">${item.name}</span>
+            <span class="item-qty">${getQtyLabel(item)}</span>
             <button class="delete-btn" onclick="deleteItem('${item.id}')">✕</button>
         `;
         planningList.appendChild(li);
+
+        // Правая колонка — цена
+        const priceLi = document.createElement('li');
+        priceLi.textContent = item.price ? formatPrice(itemTotal) : '—';
+        planningPrices.appendChild(priceLi);
     });
     
     const title = document.getElementById('plan-title');
@@ -147,7 +175,6 @@ startShoppingBtn.addEventListener('click', () => {
 
     state.plans.push(newPlan);
     state.activePlanId = newPlan.id;
-    state.isShopping = true;
     
     saveToLocalStorage();
     renderShoppingList();
@@ -171,28 +198,36 @@ function renderShoppingList() {
     activePlanContent.classList.remove('hidden');
 
     shoppingList.innerHTML = '';
+    shoppingPrices.innerHTML = '';
+    
     let checkedCount = 0;
     let totalSum = 0;
     let spentSum = 0;
 
     activePlan.items.forEach(item => {
+        const itemTotal = getItemTotal(item);
         if (item.checked) {
             checkedCount++;
-            if (item.price) spentSum += item.price;
+            spentSum += itemTotal;
         }
-        if (item.price) totalSum += item.price;
+        totalSum += itemTotal;
         
+        // Левая колонка
         const li = document.createElement('li');
         li.className = `list-item ${item.checked ? 'done' : ''}`;
         const imgSrc = item.checked ? 'images/check_mark.png' : 'images/tick_a_box.png';
-        
         li.innerHTML = `
             <img src="${imgSrc}" class="checkbox-img" onclick="toggleCheck('${item.id}')">
-            <span class="item-name">${item.name}</span>
-            ${item.qty ? `<span class="item-qty">${item.qty}</span>` : ''}
-            ${item.price ? `<span class="item-price">${formatPrice(item.price)}</span>` : ''}
+            <span class="item-name" title="${item.name}">${item.name}</span>
+            <span class="item-qty">${getQtyLabel(item)}</span>
         `;
         shoppingList.appendChild(li);
+
+        // Правая колонка — цена
+        const priceLi = document.createElement('li');
+        priceLi.textContent = item.price ? formatPrice(itemTotal) : '—';
+        if (item.checked) priceLi.classList.add('done');
+        shoppingPrices.appendChild(priceLi);
     });
 
     updateProgress(checkedCount, activePlan.items.length);
@@ -202,7 +237,7 @@ function renderShoppingList() {
 function updateTotalSum(spent, total) {
     if (total === 0) {
         totalSumText.textContent = 'Сумма не указана';
-    } else if (spent === total) {
+    } else if (Math.abs(spent - total) < 0.01) {
         totalSumText.textContent = `Итого: ${formatPrice(total)} ✅`;
     } else {
         totalSumText.textContent = `Куплено на ${formatPrice(spent)} из ${formatPrice(total)}`;
@@ -227,7 +262,6 @@ function updateProgress(checked, total) {
     progressText.textContent = `${checked} из ${total} выполнено (${percent}%)`;
 }
 
-// --- УДАЛЕНИЕ АКТИВНОГО ПЛАНА ---
 deleteActivePlanBtn.addEventListener('click', () => {
     if (!state.activePlanId) return;
     if (!confirm('Удалить текущий план? Его нельзя будет восстановить.')) return;
@@ -272,7 +306,7 @@ function switchMenuTab(tab) {
     }
 }
 
-// --- РЕЖИМ МАССОВОГО УДАЛЕНИЯ ---
+// --- РЕЖИМ ВЫБОРА ---
 selectModeBtn.addEventListener('click', enterSelectMode);
 cancelSelectBtn.addEventListener('click', exitSelectMode);
 deleteSelectedBtn.addEventListener('click', deleteSelectedPlans);
@@ -304,7 +338,6 @@ function deleteSelectedPlans() {
 
     state.plans = state.plans.filter(p => !state.selectedPlans.includes(p.id));
     
-    // Если удалили активный план — сбрасываем его
     if (state.activePlanId && state.selectedPlans.includes(state.activePlanId)) {
         state.activePlanId = null;
         renderShoppingList();
@@ -315,7 +348,6 @@ function deleteSelectedPlans() {
     renderSavedPlans();
 }
 
-// Клик по чекбоксу плана в режиме выбора
 window.togglePlanSelection = function(planId) {
     if (state.selectedPlans.includes(planId)) {
         state.selectedPlans = state.selectedPlans.filter(id => id !== planId);
@@ -342,14 +374,13 @@ function renderSavedPlans() {
         const checked = plan.items.filter(i => i.checked).length;
         const total = plan.items.length;
         const percent = total === 0 ? 0 : Math.round((checked / total) * 100);
-        const planTotal = plan.items.reduce((acc, i) => acc + (i.price || 0), 0);
-        const planSpent = plan.items.filter(i => i.checked).reduce((acc, i) => acc + (i.price || 0), 0);
+        const planTotal = plan.items.reduce((acc, i) => acc + getItemTotal(i), 0);
+        const planSpent = plan.items.filter(i => i.checked).reduce((acc, i) => acc + getItemTotal(i), 0);
         
         const li = document.createElement('li');
         li.className = 'plan-item';
 
         if (state.selectMode) {
-            // Режим выбора — показываем чекбокс с картинками
             const isSelected = state.selectedPlans.includes(plan.id);
             const imgSrc = isSelected ? 'images/check_mark.png' : 'images/tick_a_box.png';
             li.classList.add('selectable');
@@ -363,7 +394,6 @@ function renderSavedPlans() {
                 </div>
             `;
         } else {
-            // Обычный режим
             li.innerHTML = `
                 <h3>${plan.name}</h3>
                 <p>Куплено: ${checked} из ${total} (${percent}%)</p>
@@ -428,7 +458,7 @@ function renderStats() {
     let totalSum = 0;
     monthPlans.forEach(plan => {
         plan.items.forEach(item => {
-            if (item.checked && item.price) totalSum += item.price;
+            if (item.checked) totalSum += getItemTotal(item);
         });
     });
 
@@ -445,8 +475,8 @@ function renderStats() {
     monthPlans.reverse().forEach(plan => {
         const checked = plan.items.filter(i => i.checked).length;
         const total = plan.items.length;
-        const planSpent = plan.items.filter(i => i.checked).reduce((acc, i) => acc + (i.price || 0), 0);
-        const planTotal = plan.items.reduce((acc, i) => acc + (i.price || 0), 0);
+        const planSpent = plan.items.filter(i => i.checked).reduce((acc, i) => acc + getItemTotal(i), 0);
+        const planTotal = plan.items.reduce((acc, i) => acc + getItemTotal(i), 0);
         
         const li = document.createElement('li');
         li.className = 'plan-item';
