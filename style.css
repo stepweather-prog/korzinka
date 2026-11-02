@@ -27,7 +27,7 @@ header {
 
 main {
     width: 100%;
-    max-width: 750px; /* Чуть шире, чтобы две колонки помещались */
+    max-width: 750px;
     padding: 10px;
     display: flex;
     flex-direction: column;
@@ -159,14 +159,13 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     line-height: 1;
 }
 
-/* ===== ДВЕ КОЛОНКИ: ЛИСТИК + ПАНЕЛЬ ЦЕН ===== */
+/* ===== ДВЕ КОЛОНКИ ===== */
 .list-wrapper {
     display: flex;
     width: 100%;
     max-width: 700px;
     margin: 0 auto 20px auto;
     align-items: stretch;
-    /* На случай узкого экрана — разрешаем перенос */
     flex-wrap: nowrap;
 }
 
@@ -176,6 +175,10 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     flex: 1 1 65%;
     min-height: 450px;
     min-width: 0;
+    /* Листик задаёт высоту, внутри — скролл при переполнении */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .list-bg {
@@ -193,13 +196,21 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     position: relative;
     z-index: 2;
     list-style: none;
-    padding: 45px 16px 25px 26px;
+    padding: 45px 12px 25px 22px;
     display: flex;
     flex-direction: column;
-    gap: 0; /* Высоту задаём через li */
+    gap: 0;
     width: 100%;
     box-sizing: border-box;
+    flex-grow: 1;
+    /* Ограничиваем высоту, чтобы список не вылезал за листик */
+    max-height: 100%;
+    overflow-y: auto;
+    scrollbar-width: thin;
 }
+
+.items-list::-webkit-scrollbar { width: 4px; }
+.items-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
 
 /* Правая колонка — панель цен */
 .price-panel {
@@ -211,7 +222,9 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     box-sizing: border-box;
     box-shadow: 0 5px 15px rgba(0,0,0,0.15);
     display: flex;
+    flex-direction: column;
     min-width: 0;
+    overflow: hidden;
 }
 
 .prices-list {
@@ -221,25 +234,33 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     flex-direction: column;
     gap: 0;
     box-sizing: border-box;
+    flex-grow: 1;
+    max-height: 100%;
+    overflow-y: auto;
+    scrollbar-width: thin;
 }
 
-/* Синхронизация высоты строк между колонками */
+.prices-list::-webkit-scrollbar { width: 4px; }
+.prices-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
+
+/* Синхронизация строк */
 .items-list > li,
 .prices-list > li {
     height: 34px;
+    min-height: 34px;
     display: flex;
     align-items: center;
     box-sizing: border-box;
-    overflow: hidden;
     border-bottom: 1px solid transparent;
 }
 
 .prices-list > li {
     justify-content: flex-end;
-    color: #4CAF50;
+    color: #2E7D32;
     font-weight: bold;
     font-size: 14px;
     white-space: nowrap;
+    padding-right: 4px;
 }
 
 .prices-list > li.done {
@@ -247,31 +268,34 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     text-decoration: line-through;
 }
 
-/* Пункт левого списка */
+/* Пункт левого списка — всё помещается внутри */
 .list-item {
     display: flex;
     align-items: center;
     gap: 6px;
     font-size: 15px;
-    font-weight: 500;
-    color: #333;
+    font-weight: 600;
+    color: #222;
     width: 100%;
     line-height: 1.2;
     min-width: 0;
+    overflow: hidden;
 }
 
 .list-item.done { text-decoration: line-through; color: #888; }
 
+/* Название — занимает всё доступное место, обрезка с ... */
 .item-name {
     flex: 1 1 auto;
-    min-width: 0;
+    min-width: 40px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: #222;
 }
 
 .item-qty {
-    color: #555;
+    color: #444;
     font-size: 12px;
     font-weight: bold;
     background: #f0f0f0;
@@ -279,6 +303,9 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     border-radius: 8px;
     white-space: nowrap;
     flex-shrink: 0;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .checkbox-img {
@@ -292,11 +319,11 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     background: none;
     border: none;
     color: #ff5252;
-    font-size: 16px;
+    font-size: 15px;
     cursor: pointer;
     flex-shrink: 0;
     padding: 0 2px;
-    margin-left: auto;
+    line-height: 1;
 }
 
 /* ===== КНОПКИ, ПРОГРЕСС, СУММА ===== */
@@ -358,7 +385,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     box-shadow: 0 3px 8px rgba(0,0,0,0.3);
 }
 
-/* ===== ЗАГЛУШКА «НЕТ АКТИВНОГО ПЛАНА» ===== */
+/* ===== ЗАГЛУШКА ===== */
 .empty-state {
     display: flex;
     flex-direction: column;
@@ -556,38 +583,36 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 
 /* ===== АДАПТИВ ===== */
 @media (max-width: 640px) {
-    /* Форма: в две строки */
     .add-item-form { flex-wrap: wrap; }
     #new-item-input { width: 100%; flex-basis: 100%; order: 1; }
     .qty-group { order: 2; flex: 1 1 auto; }
     #new-price-input { width: 90px; order: 3; }
     #add-btn { order: 4; }
 
-    /* Колонки: панель цен уходит вниз */
+    /* На мобилке колонки друг под другом */
     .list-wrapper { flex-direction: column; max-width: 95%; }
-    .list-paper { min-height: 350px; }
+    .list-paper { min-height: 320px; }
     .list-bg { border-radius: 10px 10px 0 0; }
     .price-panel {
         border-radius: 0 0 10px 10px;
-        padding: 10px 16px 15px 16px;
+        padding: 12px 16px 15px 16px;
         flex: 1 1 auto;
     }
-    .items-list { padding: 40px 14px 15px 20px; }
+    .items-list { padding: 40px 10px 15px 18px; }
     .prices-list {
         flex-direction: row;
         flex-wrap: wrap;
         gap: 4px 10px;
     }
-    /* На мобилке синхронизация не нужна — цены идут строчкой под листиком */
-    .items-list > li { height: auto; padding: 4px 0; }
+    .items-list > li { height: auto; min-height: 32px; padding: 4px 0; }
     .prices-list > li {
         height: auto;
+        min-height: auto;
         border-bottom: none;
         font-size: 13px;
         justify-content: flex-start;
     }
-    .prices-list > li::after { content: ' ₽'; font-size: 12px; }
-    .prices-list > li:empty { display: none; }
-    .item-name { font-size: 14px; }
-    .item-qty { font-size: 11px; }
+    .item-name { font-size: 14px; min-width: 30px; }
+    .item-qty { font-size: 11px; max-width: 50px; }
+    .delete-btn { font-size: 14px; }
 }
