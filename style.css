@@ -27,7 +27,7 @@ header {
 
 main {
     width: 100%;
-    max-width: 750px;
+    max-width: 900px; /* Сделал шире, чтобы лист был большим */
     padding: 10px;
     display: flex;
     flex-direction: column;
@@ -67,7 +67,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 .add-item-form {
     display: flex;
     width: 100%;
-    max-width: 560px;
+    max-width: 800px;
     gap: 8px;
     margin-bottom: 20px;
     align-items: center;
@@ -164,13 +164,13 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 }
 .planning-controls.hidden { display: none; }
 
-/* ===== ШИРОКИЙ ЛИСТ (на всю доступную ширину) ===== */
+/* ===== ЛИСТ ===== */
 .list-wrapper {
     position: relative;
     display: flex;
     width: 100%;
-    max-width: 100%;        /* Убрал ограничение, теперь тянется насколько может */
-    min-height: 500px;      /* Высоту оставил, чтобы лист был большим */
+    max-width: 800px;       /* Лист широкий, как форма */
+    min-height: 500px;      /* И высокий */
     margin: 0 auto 20px auto;
     align-items: stretch;
     flex-wrap: nowrap;
@@ -193,14 +193,14 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     opacity: 0.95;
 }
 
-/* Панель текста — 72% */
+/* Панель текста — ШИРОКАЯ (85%) */
 .text-panel {
     position: relative;
     z-index: 2;
-    flex: 1 1 72%;
+    flex: 1 1 85%;
     background: rgba(255, 255, 255, 0.75);
     border-radius: 10px 0 0 10px;
-    padding: 80px 8px 20px 16px; /* 80px сверху от магнита */
+    padding: 80px 10px 20px 20px; /* 80px сверху от магнита */
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -208,11 +208,11 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     overflow-y: auto;
 }
 
-/* Панель цен — 28% */
+/* Панель цен — УЗКАЯ (15%) */
 .price-panel {
     position: relative;
     z-index: 2;
-    flex: 1 1 28%;
+    flex: 1 1 15%;
     background: rgba(255, 255, 255, 0.65);
     border-radius: 0 10px 10px 0;
     padding: 80px 6px 20px 4px;
@@ -433,8 +433,8 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     #add-btn { order: 4; }
 
     .list-wrapper { flex-direction: column; max-width: 95%; min-height: 400px; }
-    .text-panel { border-radius: 10px 10px 0 0; padding: 60px 10px 15px 14px; }
-    .price-panel { border-radius: 0 0 10px 10px; padding: 10px 14px 12px 14px; }
+    .text-panel { border-radius: 10px 10px 0 0; padding: 60px 10px 15px 14px; flex: 1 1 auto; }
+    .price-panel { border-radius: 0 0 10px 10px; padding: 10px 14px 12px 14px; flex: 1 1 auto; }
     .prices-list { flex-direction: row; flex-wrap: wrap; gap: 4px 10px; }
     .items-list > li { min-height: 34px; padding: 4px 0; }
     .prices-list > li { min-height: auto; border-bottom: none; font-size: 13px; justify-content: flex-start; }
