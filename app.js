@@ -1,6 +1,7 @@
 // ===================== СОСТОЯНИЕ =====================
 let state = {
     plans: JSON.parse(localStorage.getItem('korzinka_plans')) || [],
+    history: JSON.parse(localStorage.getItem('korzinka_history')) || [], // Архив для статистики
     activePlanId: localStorage.getItem('korzinka_active_id') || null,
     currentItems: [],
     statsMonth: new Date(),
@@ -159,14 +160,15 @@ function renderPlanningList() {
     const title = document.getElementById('plan-title');
     title.textContent = sum > 0 ? `Новый список (${formatPrice(sum)})` : 'Новый список';
 
-    // Панель удаления
     const selectedCount = state.currentItems.filter(i => i.selectedForDeletion).length;
     const controls = document.getElementById('planning-controls');
+    
     if (state.currentItems.length === 0) {
         planningPagesContainer.innerHTML = '';
         controls.classList.add('hidden');
         return;
     }
+    
     if (selectedCount > 0) {
         controls.classList.remove('hidden');
         document.getElementById('delete-selected-items-btn').textContent = `🗑 Удалить выбранные (${selectedCount})`;
@@ -280,8 +282,20 @@ window.toggleCheck = function(itemId) {
     const item = activePlan.items.find(i => i.id === itemId);
     if (item) {
         item.checked = !item.checked;
+
+        // Если все пункты отмечены — сохраняем копию плана в историю
+        const allChecked = activePlan.items.length > 0 && activePlan.items.every(i => i.checked);
+        if (allChecked) {
+            // Проверяем, есть ли уже этот план в истории (по id)
+            const existsInHistory = state.history.find(p => p.id === activePlan.id);
+            if (!existsInHistory) {
+                state.history.push({ ...activePlan, completedAt: new Date().toISOString() });
+            }
+        }
+
         saveToLocalStorage();
         renderShoppingList();
+        renderStats(); // обновляем статистику
     }
 };
 
@@ -299,6 +313,7 @@ deleteActivePlanBtn.addEventListener('click', () => {
     state.activePlanId = null;
     saveToLocalStorage();
     renderShoppingList();
+    // НЕ трогаем state.history
 });
 
 // ===================== РЕНДЕР СТРАНИЦ =====================
@@ -432,6 +447,7 @@ function deleteSelectedPlans() {
     const count = state.selectedPlans.length;
     if (!confirm(`Удалить ${count} ${pluralize(count, 'план', 'плана', 'планов')}?`)) return;
 
+    // Удаляем из plans, но НЕ трогаем history
     state.plans = state.plans.filter(p => !state.selectedPlans.includes(p.id));
     
     if (state.activePlanId && state.selectedPlans.includes(state.activePlanId)) {
@@ -510,10 +526,12 @@ window.resumePlan = function(planId) {
     if (checkedCount > 0 && checkedCount < plan.items.length) {
         if (!confirm('Этот план не доделан. Продолжить его или начать заново с нуля?')) {
             plan.items.forEach(i => i.checked = false);
+            state.history = state.history.filter(h => h.id !== plan.id);
         }
     } else if (checkedCount === plan.items.length) {
         if (confirm('Этот план уже выполнен. Начать заново?')) {
             plan.items.forEach(i => i.checked = false);
+            state.history = state.history.filter(h => h.id !== plan.id);
         } else {
             return;
         }
@@ -543,8 +561,8 @@ clearStatsBtn.addEventListener('click', () => {
     const year = state.statsMonth.getFullYear();
     const month = state.statsMonth.getMonth();
     
-    const monthPlans = state.plans.filter(plan => {
-        const planDate = plan.createdAt ? new Date(plan.createdAt) : new Date(plan.date);
+    const monthPlans = state.history.filter(plan => {
+        const planDate = new Date(plan.completedAt || plan.createdAt || plan.date);
         return planDate.getFullYear() === year && planDate.getMonth() === month;
     });
 
@@ -554,19 +572,12 @@ clearStatsBtn.addEventListener('click', () => {
     }
 
     const monthName = state.statsMonth.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
-    if (!confirm(`Удалить все планы за ${monthName} (${monthPlans.length} шт.)?`)) return;
+    if (!confirm(`Удалить историю за ${monthName} (${monthPlans.length} шт.)?`)) return;
 
     const idsToRemove = monthPlans.map(p => p.id);
-    state.plans = state.plans.filter(p => !idsToRemove.includes(p.id));
-
-    if (state.activePlanId && idsToRemove.includes(state.activePlanId)) {
-        state.activePlanId = null;
-        renderShoppingList();
-    }
-
+    state.history = state.history.filter(p => !idsToRemove.includes(p.id));
     saveToLocalStorage();
     renderStats();
-    renderSavedPlans();
 });
 
 function renderStats() {
@@ -576,8 +587,9 @@ function renderStats() {
     const monthName = state.statsMonth.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
     currentMonthLabel.textContent = monthName;
 
-    const monthPlans = state.plans.filter(plan => {
-        const planDate = plan.createdAt ? new Date(plan.createdAt) : new Date(plan.date);
+    // Берем данные из history
+    const monthPlans = state.history.filter(plan => {
+        const planDate = new Date(plan.completedAt || plan.createdAt || plan.date);
         return planDate.getFullYear() === year && planDate.getMonth() === month;
     });
 
@@ -598,7 +610,7 @@ function renderStats() {
         return;
     }
 
-    monthPlans.reverse().forEach(plan => {
+    monthPlans.slice().reverse().forEach(plan => {
         const checked = plan.items.filter(i => i.checked).length;
         const total = plan.items.length;
         const planSpent = plan.items.filter(i => i.checked).reduce((acc, i) => acc + getItemTotal(i), 0);
@@ -623,19 +635,15 @@ window.deletePlanFromStats = function(planId, event) {
     event.stopPropagation();
     if (!confirm('Удалить этот план из статистики?')) return;
     
-    state.plans = state.plans.filter(p => p.id !== planId);
-    if (state.activePlanId === planId) {
-        state.activePlanId = null;
-        renderShoppingList();
-    }
+    state.history = state.history.filter(p => p.id !== planId);
     saveToLocalStorage();
     renderStats();
-    renderSavedPlans();
 };
 
 // ===================== МОДАЛЬНОЕ ОКНО =====================
 window.openPlanDetails = function(planId) {
-    const plan = state.plans.find(p => p.id === planId);
+    // Ищем сначала в plans, потом в history
+    const plan = state.plans.find(p => p.id === planId) || state.history.find(p => p.id === planId);
     if (!plan) return;
 
     modalCurrentPlanId = planId;
@@ -681,8 +689,11 @@ function renderModalItems(plan) {
 }
 
 window.updateModalQty = function(itemId, value) {
-    const plan = state.plans.find(p => p.id === modalCurrentPlanId);
+    // Ищем план в plans, затем в history
+    let plan = state.plans.find(p => p.id === modalCurrentPlanId);
+    if (!plan) plan = state.history.find(p => p.id === modalCurrentPlanId);
     if (!plan) return;
+
     const item = plan.items.find(i => i.id === itemId);
     if (!item) return;
 
@@ -725,6 +736,7 @@ document.addEventListener('keydown', (e) => {
 // ===================== ПАМЯТЬ =====================
 function saveToLocalStorage() {
     localStorage.setItem('korzinka_plans', JSON.stringify(state.plans));
+    localStorage.setItem('korzinka_history', JSON.stringify(state.history)); // <-- Сохраняем историю
     localStorage.setItem('korzinka_active_id', state.activePlanId || '');
 }
 
