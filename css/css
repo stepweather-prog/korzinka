@@ -1,0 +1,261 @@
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+
+body {
+    background-image: url('images/lit_cozy.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #333;
+}
+
+header {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding-top: 15px;
+    position: relative;
+    z-index: 10;
+}
+
+#menu-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+#menu-btn:active { transform: scale(0.9); }
+#magnet-img { width: 60px; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
+
+main {
+    width: 100%;
+    max-width: 500px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-grow: 1;
+}
+
+/* Вкладки */
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 5px;
+    border-radius: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.tab {
+    padding: 8px 16px;
+    border: none;
+    background: none;
+    border-radius: 15px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #777;
+}
+
+.tab.active { background: #4CAF50; color: white; }
+
+/* Экраны */
+.view { display: none; width: 100%; flex-direction: column; align-items: center; }
+.view.active { display: flex; }
+
+h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+
+/* Форма добавления */
+.add-item-form {
+    display: flex;
+    width: 80%;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+#new-item-input {
+    flex-grow: 1;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 20px;
+    outline: none;
+    font-size: 16px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#add-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: none;
+    background: #4CAF50;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+/* Контейнер для листика */
+.list-container {
+    position: relative;
+    width: 90%;
+    min-height: 400px;
+    margin-bottom: 20px;
+}
+
+.list-bg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: fill;
+    z-index: 1;
+    pointer-events: none;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.items-list {
+    position: relative;
+    z-index: 2;
+    list-style: none;
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Пункт списка */
+.list-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    font-size: 18px;
+    font-weight: 500;
+    color: #333;
+}
+
+.list-item.done { text-decoration: line-through; color: #888; }
+
+/* Картинки-чекбоксы */
+.checkbox-img {
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.delete-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: #ff5252;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+/* Кнопки */
+.main-btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 25px;
+    background: #4CAF50;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    margin-bottom: 20px;
+}
+
+/* Прогресс бар */
+#progress-container {
+    width: 80%;
+    height: 15px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+#progress-bar {
+    height: 100%;
+    background: #4CAF50;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+#progress-text {
+    color: #fff;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Выдвижное меню */
+#side-menu {
+    position: fixed;
+    top: 0; left: 0;
+    width: 80%; max-width: 350px;
+    height: 100vh;
+    background: white;
+    z-index: 100;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+    padding: 20px;
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+}
+
+#side-menu.hidden { transform: translateX(-100%); }
+
+.menu-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 15px;
+}
+
+.app-icon { width: 50px; height: 50px; border-radius: 10px; }
+
+#saved-plans-list { list-style: none; }
+
+.plan-item {
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+
+.plan-item h3 { margin-bottom: 5px; color: #333; font-size: 16px; }
+.plan-item p { font-size: 14px; color: #777; margin-bottom: 5px; }
+
+.plan-progress {
+    height: 5px;
+    background: #ddd;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.plan-progress-bar { height: 100%; background: #4CAF50; }
+
+#close-menu-btn {
+    width: 100%;
+    padding: 10px;
+    background: #ddd;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 20px;
+}
