@@ -80,7 +80,7 @@ tabs.forEach(tab => {
 function formatPrice(price) {
     if (!price && price !== 0) return '';
     return new Intl.NumberFormat('ru-RU', { 
-        style: 'currency', currency: 'RUB', maximumFractionDigits: 2 
+        style: 'currency', currency: 'RUB', maximumFractionDigits: 0 
     }).format(price);
 }
 
@@ -109,6 +109,14 @@ function chunk(arr, size) {
         result.push(arr.slice(i, i + size));
     }
     return result;
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
 
 // ===================== ПЛАНИРОВАНИЕ =====================
@@ -148,13 +156,17 @@ function renderPlanningList() {
     let sum = 0;
     state.currentItems.forEach(item => sum += getItemTotal(item));
 
-    const pages = chunk(state.currentItems, ITEMS_PER_PAGE);
-    if (pages.length === 0) pages.push([]);
-
-    renderPages(planningPagesContainer, pages, 'planning');
-
     const title = document.getElementById('plan-title');
     title.textContent = sum > 0 ? `Новый список (${formatPrice(sum)})` : 'Новый список';
+
+    // Если список пуст — ничего не рисуем (никаких листиков)
+    if (state.currentItems.length === 0) {
+        planningPagesContainer.innerHTML = '';
+        return;
+    }
+
+    const pages = chunk(state.currentItems, ITEMS_PER_PAGE);
+    renderPages(planningPagesContainer, pages, 'planning');
 }
 
 window.updatePlanningQty = function(id, value) {
@@ -199,9 +211,11 @@ startShoppingBtn.addEventListener('click', () => {
 function renderShoppingList() {
     const activePlan = state.plans.find(p => p.id === state.activePlanId);
     
-    if (!activePlan) {
+    // Если нет активного плана или он пустой — заглушка, листик не рисуем
+    if (!activePlan || activePlan.items.length === 0) {
         noActivePlan.classList.remove('hidden');
         activePlanContent.classList.add('hidden');
+        shoppingPagesContainer.innerHTML = '';
         return;
     }
 
@@ -222,7 +236,6 @@ function renderShoppingList() {
     });
 
     const pages = chunk(activePlan.items, ITEMS_PER_PAGE);
-    if (pages.length === 0) pages.push([]);
     renderPages(shoppingPagesContainer, pages, 'shopping');
 
     updateProgress(checkedCount, activePlan.items.length);
@@ -267,23 +280,20 @@ deleteActivePlanBtn.addEventListener('click', () => {
     renderShoppingList();
 });
 
-// ===================== УНИВЕРСАЛЬНЫЙ РЕНДЕР СТРАНИЦ =====================
+// ===================== РЕНДЕР СТРАНИЦ =====================
 function renderPages(container, pages, mode) {
-    // Очищаем контейнер
     container.innerHTML = '';
 
     pages.forEach((pageItems, pageIndex) => {
         const wrapper = document.createElement('div');
         wrapper.className = 'list-wrapper';
 
-        // 1. Декоративный листик (фон)
         const bg = document.createElement('img');
         bg.src = 'images/list.png';
         bg.alt = 'Листик';
         bg.className = 'list-bg';
         wrapper.appendChild(bg);
 
-        // 2. Панель текста
         const textPanel = document.createElement('div');
         textPanel.className = 'text-panel';
         const ul = document.createElement('ul');
@@ -316,7 +326,6 @@ function renderPages(container, pages, mode) {
         textPanel.appendChild(ul);
         wrapper.appendChild(textPanel);
 
-        // 3. Панель цен
         const pricesPanel = document.createElement('div');
         pricesPanel.className = 'price-panel';
         const pricesUl = document.createElement('ul');
@@ -335,15 +344,6 @@ function renderPages(container, pages, mode) {
 
         container.appendChild(wrapper);
     });
-}
-
-// Простая защита от XSS — экранируем < > & "
-function escapeHtml(str) {
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
 }
 
 // ===================== МЕНЮ =====================
@@ -380,7 +380,7 @@ function switchMenuTab(tab) {
     }
 }
 
-// ===================== РЕЖИМ ВЫБОРА (МАССОВОЕ УДАЛЕНИЕ) =====================
+// ===================== РЕЖИМ ВЫБОРА =====================
 selectModeBtn.addEventListener('click', enterSelectMode);
 cancelSelectBtn.addEventListener('click', exitSelectMode);
 deleteSelectedBtn.addEventListener('click', deleteSelectedPlans);
@@ -611,7 +611,7 @@ window.deletePlanFromStats = function(planId, event) {
     renderSavedPlans();
 };
 
-// ===================== МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ ПЛАНА =====================
+// ===================== МОДАЛЬНОЕ ОКНО =====================
 window.openPlanDetails = function(planId) {
     const plan = state.plans.find(p => p.id === planId);
     if (!plan) return;
