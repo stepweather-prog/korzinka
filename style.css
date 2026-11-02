@@ -35,7 +35,6 @@ main {
     flex-grow: 1;
 }
 
-/* Вкладки */
 .tabs {
     display: flex;
     gap: 10px;
@@ -59,13 +58,11 @@ main {
 
 .tab.active { background: #4CAF50; color: white; }
 
-/* Экраны */
 .view { display: none; width: 100%; flex-direction: column; align-items: center; }
 .view.active { display: flex; }
 
 h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6); }
 
-/* Форма добавления */
 .add-item-form {
     display: flex;
     width: 100%;
@@ -88,7 +85,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     height: 42px;
 }
 
-/* Группа «Кол-во + единица» */
 .qty-group {
     display: flex;
     align-items: center;
@@ -135,7 +131,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     height: 42px;
 }
 
-/* Убираем стрелки у number-input */
 #new-qty-input::-webkit-outer-spin-button,
 #new-qty-input::-webkit-inner-spin-button,
 #new-price-input::-webkit-outer-spin-button,
@@ -169,7 +164,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     flex-wrap: nowrap;
 }
 
-/* Левая колонка — листик (75%) */
 .list-paper {
     position: relative;
     flex: 1 1 75%;
@@ -195,7 +189,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     position: relative;
     z-index: 2;
     list-style: none;
-    /* Левый отступ 60px — текст далеко от края листика */
     padding: 45px 20px 25px 60px;
     display: flex;
     flex-direction: column;
@@ -211,7 +204,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 .items-list::-webkit-scrollbar { width: 4px; }
 .items-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
 
-/* Правая колонка — панель цен (25%) */
 .price-panel {
     flex: 1 1 25%;
     background: rgba(255, 255, 255, 0.75);
@@ -242,7 +234,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 .prices-list::-webkit-scrollbar { width: 4px; }
 .prices-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
 
-/* Синхронизация строк — 40px для чекбоксов */
 .items-list > li,
 .prices-list > li {
     height: 40px;
@@ -267,7 +258,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     text-decoration: line-through;
 }
 
-/* Пункт левого списка */
 .list-item {
     display: flex;
     align-items: center;
@@ -284,7 +274,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 
 .list-item.done { text-decoration: line-through; color: #888; }
 
-/* Название — не растягивается, обрезается с ... */
 .item-name {
     flex: 0 1 auto;
     min-width: 0;
@@ -294,7 +283,26 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     color: #222;
 }
 
-/* Количество — сразу после названия */
+/* Редактируемое количество */
+.item-qty-input {
+    width: 55px;
+    padding: 2px 4px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 12px;
+    text-align: center;
+    color: #444;
+    background: #fff;
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+
+.item-qty-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+/* Отображение количества (в режиме выполнения) */
 .item-qty {
     color: #444;
     font-size: 12px;
@@ -305,12 +313,8 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     white-space: nowrap;
     flex-shrink: 0;
     margin-left: 4px;
-    max-width: 60px;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-/* Чекбокс */
 .checkbox-img {
     width: 24px;
     height: 24px;
@@ -319,21 +323,19 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     margin-right: 4px;
 }
 
-/* Крестик */
+/* Крестик — всегда виден сразу после количества */
 .delete-btn {
     background: none;
     border: none;
     color: #ff5252;
-    font-size: 15px;
+    font-size: 16px;
     cursor: pointer;
     flex-shrink: 0;
-    padding: 0 4px;
+    padding: 0 6px;
     line-height: 1;
-    margin-left: auto;
-    margin-right: 8px;
+    margin-left: 6px;
 }
 
-/* ===== КНОПКИ, ПРОГРЕСС, СУММА ===== */
 .main-btn {
     padding: 12px 30px;
     border: none;
@@ -392,7 +394,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     box-shadow: 0 3px 8px rgba(0,0,0,0.3);
 }
 
-/* ===== ЗАГЛУШКА ===== */
 .empty-state {
     display: flex;
     flex-direction: column;
@@ -419,7 +420,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 .empty-state .empty-hint { font-size: 14px; font-weight: normal; color: #777; margin-bottom: 20px; line-height: 1.4; }
 .empty-state .main-btn { margin-bottom: 0; font-size: 16px; padding: 10px 24px; }
 
-/* ===== МЕНЮ ===== */
 #side-menu {
     position: fixed;
     top: 0; left: 0;
@@ -526,7 +526,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 
 .plan-progress-bar { height: 100%; background: #4CAF50; }
 
-/* ===== СТАТИСТИКА ===== */
 .stats-month-selector {
     display: flex;
     align-items: center;
@@ -588,7 +587,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 
 .hidden { display: none !important; }
 
-/* ===== МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ ПЛАНА ===== */
+/* ===== МОДАЛЬНОЕ ОКНО ===== */
 .modal {
     position: fixed;
     top: 0; left: 0;
@@ -690,22 +689,39 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     color: #999;
 }
 
-.modal-items-list .modal-item-qty {
+.modal-items-list .modal-item-qty-input {
+    width: 55px;
+    padding: 3px 4px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
     font-size: 12px;
-    color: #555;
-    background: #f0f0f0;
-    padding: 1px 6px;
-    border-radius: 8px;
-    white-space: nowrap;
+    text-align: center;
     flex-shrink: 0;
 }
 
-.modal-items-list .modal-item-price {
+.modal-items-list .modal-item-qty-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+.modal-items-list .modal-item-price-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 12px;
+    flex-shrink: 0;
+    min-width: 90px;
+}
+
+.modal-items-list .modal-item-unit-price {
+    color: #999;
+    font-size: 11px;
+}
+
+.modal-items-list .modal-item-total {
     color: #4CAF50;
     font-weight: bold;
-    font-size: 13px;
-    white-space: nowrap;
-    flex-shrink: 0;
+    font-size: 14px;
 }
 
 .modal-summary {
@@ -734,7 +750,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     color: #2E7D32;
 }
 
-/* Кликабельный план в статистике */
 #stats-plans-list .plan-item {
     cursor: pointer;
     transition: background 0.15s;
@@ -744,7 +759,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     background: #eef7ee;
 }
 
-/* ===== АДАПТИВ ===== */
 @media (max-width: 640px) {
     .add-item-form { flex-wrap: wrap; }
     #new-item-input { width: 100%; flex-basis: 100%; order: 1; }
@@ -776,5 +790,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     }
     .item-name { font-size: 14px; min-width: 30px; }
     .item-qty { font-size: 11px; max-width: 50px; }
+    .item-qty-input { width: 48px; font-size: 11px; }
     .delete-btn { font-size: 14px; }
 }
