@@ -21,13 +21,7 @@ header {
     z-index: 10;
 }
 
-#menu-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
+#menu-btn { background: none; border: none; cursor: pointer; transition: transform 0.2s; }
 #menu-btn:active { transform: scale(0.9); }
 #magnet-img { width: 60px; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
 
@@ -74,7 +68,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 /* Форма добавления */
 .add-item-form {
     display: flex;
-    width: 90%;
+    width: 95%;
     gap: 8px;
     margin-bottom: 20px;
     align-items: center;
@@ -89,25 +83,69 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     font-size: 16px;
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
     min-width: 0;
+    height: 42px;
 }
 
-#new-qty-input, #new-price-input {
-    padding: 10px;
+/* Группа «Кол-во + единица» */
+.qty-group {
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 20px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+    flex-shrink: 0;
+    height: 42px;
+}
+
+#new-qty-input {
+    width: 55px;
+    padding: 10px 6px;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    text-align: center;
+    background: transparent;
+}
+
+#new-unit-select {
+    border: none;
+    outline: none;
+    background: #f0f0f0;
+    padding: 0 6px;
+    height: 100%;
+    font-size: 13px;
+    font-weight: bold;
+    color: #555;
+    cursor: pointer;
+}
+
+#new-price-input {
+    padding: 10px 8px;
     border: none;
     border-radius: 20px;
     outline: none;
-    font-size: 16px;
+    font-size: 15px;
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
     text-align: center;
     flex-shrink: 0;
+    width: 90px;
+    height: 42px;
 }
 
-#new-qty-input { width: 75px; }
-#new-price-input { width: 90px; }
+/* Убираем стрелки у number-input */
+#new-qty-input::-webkit-outer-spin-button,
+#new-qty-input::-webkit-inner-spin-button,
+#new-price-input::-webkit-outer-spin-button,
+#new-price-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+#new-qty-input, #new-price-input { -moz-appearance: textfield; }
 
 #add-btn {
-    width: 45px;
-    height: 45px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     border: none;
     background: #4CAF50;
@@ -116,6 +154,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     cursor: pointer;
     box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     flex-shrink: 0;
+    line-height: 1;
 }
 
 /* Контейнер для листика */
@@ -140,61 +179,72 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
+/* Список внутри листика */
 .items-list {
     position: relative;
     z-index: 2;
     list-style: none;
-    padding: 45px 35px 30px 35px;
+    padding: 45px 28px 25px 28px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 6px;
     width: 100%;
+    overflow: hidden;
 }
 
-/* Пункт списка */
+/* Пункт списка — перенос строк при нехватке места */
 .list-item {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     padding: 8px 0;
     border-bottom: 1px solid #eee;
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 500;
     color: #333;
     width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    word-break: break-word;
 }
 
 .list-item.done { text-decoration: line-through; color: #888; }
 
+/* Название — переносится, не обрезается */
 .item-name {
-    flex-grow: 1;
-    word-break: break-word;
-    line-height: 1.3;
+    flex: 1 1 auto;
     min-width: 0;
+    line-height: 1.3;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
 }
 
+/* Количество */
 .item-qty {
     color: #555;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: bold;
     background: #f0f0f0;
-    padding: 2px 8px;
-    border-radius: 10px;
+    padding: 2px 6px;
+    border-radius: 8px;
     white-space: nowrap;
     flex-shrink: 0;
 }
 
+/* Цена */
 .item-price {
     color: #4CAF50;
     font-weight: bold;
-    font-size: 16px;
+    font-size: 14px;
     white-space: nowrap;
     flex-shrink: 0;
 }
 
 .checkbox-img {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     cursor: pointer;
     flex-shrink: 0;
 }
@@ -203,13 +253,13 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     background: none;
     border: none;
     color: #ff5252;
-    font-size: 20px;
+    font-size: 16px;
     cursor: pointer;
     flex-shrink: 0;
-    padding: 0 5px;
+    padding: 0 2px;
 }
 
-/* Кнопки */
+/* Основные кнопки */
 .main-btn {
     padding: 12px 30px;
     border: none;
@@ -223,7 +273,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     margin-bottom: 20px;
 }
 
-/* Прогресс бар */
+/* Прогресс */
 #progress-container {
     width: 80%;
     height: 15px;
@@ -253,9 +303,10 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     margin-top: 5px;
     margin-bottom: 15px;
+    text-align: center;
+    padding: 0 10px;
 }
 
-/* Кнопка удаления активного плана */
 .delete-active-btn {
     background: rgba(255, 82, 82, 0.9);
     color: white;
@@ -267,8 +318,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     margin-bottom: 20px;
     box-shadow: 0 3px 8px rgba(0,0,0,0.3);
 }
-
-.delete-active-btn:active { transform: scale(0.97); }
 
 /* Заглушка "Нет активного плана" */
 .empty-state {
@@ -293,26 +342,9 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
-.empty-state p {
-    font-size: 18px;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 8px;
-}
-
-.empty-state .empty-hint {
-    font-size: 14px;
-    font-weight: normal;
-    color: #777;
-    margin-bottom: 20px;
-    line-height: 1.4;
-}
-
-.empty-state .main-btn {
-    margin-bottom: 0;
-    font-size: 16px;
-    padding: 10px 24px;
-}
+.empty-state p { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 8px; }
+.empty-state .empty-hint { font-size: 14px; font-weight: normal; color: #777; margin-bottom: 20px; line-height: 1.4; }
+.empty-state .main-btn { margin-bottom: 0; font-size: 16px; padding: 10px 24px; }
 
 /* Выдвижное меню */
 #side-menu {
@@ -341,7 +373,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 
 .app-icon { width: 50px; height: 50px; border-radius: 10px; }
 
-/* Переключатель меню Планы/Статистика */
 .menu-tabs {
     display: flex;
     gap: 5px;
@@ -365,10 +396,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 
 .menu-tab.active { background: white; color: #4CAF50; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
-/* Панель управления планами (Выбрать / Удалить) */
-#plans-controls {
-    margin-bottom: 12px;
-}
+#plans-controls { margin-bottom: 12px; }
 
 .small-btn {
     padding: 6px 14px;
@@ -385,7 +413,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 
 .small-btn.cancel { background: #e0e0e0; color: #555; }
 .small-btn.danger { background: #ff5252; color: white; }
-.small-btn:active { transform: scale(0.96); }
 
 #select-mode-actions { display: inline-flex; gap: 5px; }
 
@@ -400,7 +427,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     flex-direction: column;
 }
 
-/* План в режиме выбора */
 .plan-item.selectable { flex-direction: row; align-items: flex-start; gap: 10px; }
 
 .plan-item .plan-checkbox {
@@ -411,9 +437,9 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     margin-top: 3px;
 }
 
-.plan-item .plan-content { flex-grow: 1; display: flex; flex-direction: column; }
+.plan-item .plan-content { flex-grow: 1; display: flex; flex-direction: column; min-width: 0; }
 
-.plan-item h3 { margin-bottom: 5px; color: #333; font-size: 16px; }
+.plan-item h3 { margin-bottom: 5px; color: #333; font-size: 16px; word-break: break-word; }
 .plan-item p { font-size: 14px; color: #777; margin-bottom: 5px; }
 .plan-sum { font-size: 14px; color: #4CAF50; font-weight: bold; margin-bottom: 5px; }
 
@@ -497,55 +523,11 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     #new-price-input { width: 100px; order: 3; }
     #add-btn { order: 4; }
 
-    .items-list { padding: 38px 16px 20px 16px; }
-    .list-item { font-size: 13px; gap: 4px; }
+    .list-container { width: 95%; }
+    .items-list { padding: 38px 12px 20px 12px; }
+    .list-item { font-size: 14px; gap: 5px; }
     .item-qty { font-size: 11px; padding: 1px 5px; }
-    .item-price { font-size: 12px; }
+    .item-price { font-size: 13px; }
     .checkbox-img { width: 22px; height: 22px; }
     .delete-btn { font-size: 14px; }
-}
-/* Группа «Кол-во + единица» */
-.qty-group {
-    display: flex;
-    align-items: center;
-    background: white;
-    border-radius: 20px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-    overflow: hidden;
-    flex-shrink: 0;
-    height: 42px;
-}
-
-#new-qty-input {
-    width: 55px;
-    padding: 10px 6px;
-    border: none;
-    outline: none;
-    font-size: 15px;
-    text-align: center;
-    background: transparent;
-}
-
-#new-unit-select {
-    border: none;
-    outline: none;
-    background: #f0f0f0;
-    padding: 0 6px;
-    height: 100%;
-    font-size: 13px;
-    font-weight: bold;
-    color: #555;
-    cursor: pointer;
-}
-
-/* Убираем стрелки у input[type=number] */
-#new-qty-input::-webkit-outer-spin-button,
-#new-qty-input::-webkit-inner-spin-button,
-#new-price-input::-webkit-outer-spin-button,
-#new-price-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-#new-qty-input, #new-price-input {
-    -moz-appearance: textfield;
 }
