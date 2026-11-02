@@ -175,7 +175,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     flex: 1 1 65%;
     min-height: 450px;
     min-width: 0;
-    /* Листик задаёт высоту, внутри — скролл при переполнении */
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -203,7 +202,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     width: 100%;
     box-sizing: border-box;
     flex-grow: 1;
-    /* Ограничиваем высоту, чтобы список не вылезал за листик */
     max-height: 100%;
     overflow-y: auto;
     scrollbar-width: thin;
@@ -268,7 +266,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     text-decoration: line-through;
 }
 
-/* Пункт левого списка — всё помещается внутри */
+/* Пункт левого списка */
 .list-item {
     display: flex;
     align-items: center;
@@ -284,16 +282,17 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 
 .list-item.done { text-decoration: line-through; color: #888; }
 
-/* Название — занимает всё доступное место, обрезка с ... */
+/* Название — не растягивается, обрезается с ... */
 .item-name {
-    flex: 1 1 auto;
-    min-width: 40px;
+    flex: 0 1 auto;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     color: #222;
 }
 
+/* Количество — сразу после названия */
 .item-qty {
     color: #444;
     font-size: 12px;
@@ -303,6 +302,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     border-radius: 8px;
     white-space: nowrap;
     flex-shrink: 0;
+    margin-left: 4px;
     max-width: 60px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -315,6 +315,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     flex-shrink: 0;
 }
 
+/* Крестик прижимается вправо */
 .delete-btn {
     background: none;
     border: none;
@@ -324,6 +325,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     flex-shrink: 0;
     padding: 0 2px;
     line-height: 1;
+    margin-left: auto;
 }
 
 /* ===== КНОПКИ, ПРОГРЕСС, СУММА ===== */
@@ -589,7 +591,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     #new-price-input { width: 90px; order: 3; }
     #add-btn { order: 4; }
 
-    /* На мобилке колонки друг под другом */
     .list-wrapper { flex-direction: column; max-width: 95%; }
     .list-paper { min-height: 320px; }
     .list-bg { border-radius: 10px 10px 0 0; }
