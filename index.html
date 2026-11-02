@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Корзинка</title>
     
+    <!-- Иконка на вкладке браузера (favicon) -->
     <link rel="icon" type="image/png" href="images/icon.png">
     <link rel="shortcut icon" type="image/png" href="images/icon.png">
     
@@ -14,23 +15,27 @@
 </head>
 <body>
 
+    <!-- Верхнее меню с магнитиком -->
     <header>
         <button id="menu-btn" aria-label="Меню">
             <img src="images/happy_smiley_magnit.png" alt="Меню" id="magnet-img">
         </button>
     </header>
 
+    <!-- Выдвижное меню -->
     <aside id="side-menu" class="hidden">
         <div class="menu-header">
             <img src="images/icon.png" alt="Корзинка" class="app-icon">
             <h2>Корзинка</h2>
         </div>
         
+        <!-- Переключение меню: Планы / Статистика -->
         <div class="menu-tabs">
             <button id="menu-tab-plans" class="menu-tab active">Планы</button>
             <button id="menu-tab-stats" class="menu-tab">Статистика</button>
         </div>
 
+        <!-- Панель управления планами -->
         <div id="plans-controls">
             <button id="select-mode-btn" class="small-btn">☑ Выбрать</button>
             <div id="select-mode-actions" class="hidden">
@@ -39,10 +44,12 @@
             </div>
         </div>
 
+        <!-- Список планов -->
         <div id="menu-plans-view">
             <ul id="saved-plans-list"></ul>
         </div>
 
+        <!-- Статистика за месяц -->
         <div id="menu-stats-view" class="hidden">
             <div class="stats-month-selector">
                 <button id="prev-month-btn">◀</button>
@@ -60,7 +67,9 @@
         <button id="close-menu-btn">Закрыть</button>
     </aside>
 
+    <!-- Основной контент -->
     <main>
+        <!-- Вкладки -->
         <div class="tabs">
             <button id="tab-plan" class="tab active">Планирование</button>
             <button id="tab-shop" class="tab">Выполнение</button>
@@ -87,9 +96,15 @@
                 <button id="add-btn">+</button>
             </div>
 
-            <div class="list-container">
-                <img src="images/list.png" alt="Листик" class="list-bg">
-                <ul id="planning-list" class="items-list"></ul>
+            <!-- Листик + панель цен -->
+            <div class="list-wrapper">
+                <div class="list-paper">
+                    <img src="images/list.png" alt="Листик" class="list-bg">
+                    <ul id="planning-list" class="items-list"></ul>
+                </div>
+                <div class="price-panel">
+                    <ul id="planning-prices" class="prices-list"></ul>
+                </div>
             </div>
             
             <button id="start-shopping-btn" class="main-btn">Сохранить и Начать</button>
@@ -99,6 +114,7 @@
         <section id="view-shop" class="view">
             <h2>В магазине</h2>
             
+            <!-- Заглушка, если нет активного плана -->
             <div id="no-active-plan" class="empty-state">
                 <img src="images/icon.png" alt="Корзинка" class="empty-icon">
                 <p>Нет активного плана</p>
@@ -106,10 +122,17 @@
                 <button class="main-btn" onclick="document.getElementById('tab-plan').click()">Создать список</button>
             </div>
 
+            <!-- Активный план -->
             <div id="active-plan-content" class="hidden">
-                <div class="list-container">
-                    <img src="images/list.png" alt="Листик" class="list-bg">
-                    <ul id="shopping-list" class="items-list"></ul>
+                <!-- Листик + панель цен -->
+                <div class="list-wrapper">
+                    <div class="list-paper">
+                        <img src="images/list.png" alt="Листик" class="list-bg">
+                        <ul id="shopping-list" class="items-list"></ul>
+                    </div>
+                    <div class="price-panel">
+                        <ul id="shopping-prices" class="prices-list"></ul>
+                    </div>
                 </div>
 
                 <div id="progress-container">
@@ -124,6 +147,7 @@
         </section>
     </main>
 
+    <!-- Регистрация Service Worker для PWA -->
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
