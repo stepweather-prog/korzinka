@@ -2,61 +2,78 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Sherwood Horror RPG</title>
-    <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Корзинка</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="images/icon.png">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div id="loadingScreen">
-    <img src="assets/backgrounds/loading_screen_with_logo.png" alt="Loading">
-    <button id="playButton">
-        <img src="assets/icons/play_button.png" alt="Play">
-    </button>
-</div>
+    <!-- Верхнее меню с магнитиком -->
+    <header>
+        <button id="menu-btn" aria-label="Меню">
+            <img src="images/happy_smiley_magnit.png" alt="Меню" id="magnet-img">
+        </button>
+    </header>
 
-<div id="homeScreen">
-    <img id="leftStatue" src="assets/game_details/left_statue_of_the_main_screen.png" alt="Left Statue">
-    
-    <div id="gameZone">
-        <img id="arch" src="assets/game_details/staircase_with_an_arch.png" alt="Arch">
-        <img id="leftDivider" src="assets/game_details/left_divider.png" alt="Left Divider">
-        <img id="rightDivider" src="assets/game_details/divider_right.png" alt="Right Divider">
-        <img id="hero" src="assets/hero_skins/skin1_01.png" alt="Hero">
-    </div>
-    
-    <img id="rightStatue" src="assets/game_details/right_statue_of_the_main_screen.png" alt="Right Statue">
-</div>
+    <!-- Выдвижное меню -->
+    <aside id="side-menu" class="hidden">
+        <div class="menu-header">
+            <img src="images/icon.png" alt="Корзинка" class="app-icon">
+            <h2>Мои планы</h2>
+        </div>
+        <ul id="saved-plans-list">
+            <!-- Сюда будут сохраняться планы -->
+        </ul>
+        <button id="close-menu-btn">Закрыть</button>
+    </aside>
 
-<!-- Меню без canvas -->
-<div id="menuScreen" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:200;background:#000;">
-    <div id="menu-ceiling" style="position:absolute;top:0;left:0;width:100%;height:25%;background-size:cover;background-position:center;"></div>
-    <div id="menu-wall" style="position:absolute;top:25%;left:0;width:100%;height:50%;background-size:cover;background-position:center;overflow:hidden;white-space:nowrap;"></div>
-    <div id="menu-floor" style="position:absolute;bottom:0;left:0;width:100%;height:25%;display:flex;overflow:hidden;"></div>
-    
-    <img id="menu-home-btn" src="assets/Sherwood_Square/oak_area.png" style="position:absolute;top:20px;left:20px;width:8vw;height:8vw;cursor:pointer;z-index:10;">
-    
-    <img id="menu-left-arrow" src="assets/icons/left.png" style="position:absolute;left:20px;top:50%;transform:translateY(-50%);width:10vw;height:10vw;cursor:pointer;z-index:10;">
-    <img id="menu-right-arrow" src="assets/icons/right.png" style="position:absolute;right:20px;top:50%;transform:translateY(-50%);width:10vw;height:10vw;cursor:pointer;z-index:10;">
-    
-    <div id="menu-icon-container" style="position:absolute;top:25%;left:0;width:100%;height:50%;overflow:hidden;white-space:nowrap;"></div>
-</div>
+    <!-- Основной контент -->
+    <main>
+        <!-- Вкладки -->
+        <div class="tabs">
+            <button id="tab-plan" class="tab active">Планирование</button>
+            <button id="tab-shop" class="tab">Выполнение</button>
+        </div>
 
-<script src="js/settings.js"></script>
-<script src="js/sherwood.js"></script>
-<script src="js/textures.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/bag.js"></script>
-<script src="js/talents.js"></script>
-<script src="js/tavern.js"></script>
-<script src="js/portal.js"></script>
-<script src="js/bestiary.js"></script>
-<script src="js/dungeon.js"></script>
-<script src="js/dungeon2d5.js"></script>
-<script src="js/daily.js"></script>
-<script src="js/quests.js"></script>
-<script src="js/menu.js"></script>
-<script src="js/main.js"></script>
+        <!-- Экран планирования -->
+        <section id="view-plan" class="view active">
+            <h2 id="plan-title">Новый список</h2>
+            
+            <div class="add-item-form">
+                <input type="text" id="new-item-input" placeholder="Что купить?">
+                <button id="add-btn">+</button>
+            </div>
+
+            <div class="list-container">
+                <img src="images/list.png" alt="Листик" class="list-bg">
+                <ul id="planning-list" class="items-list">
+                    <!-- Пункты будут здесь -->
+                </ul>
+            </div>
+            
+            <button id="start-shopping-btn" class="main-btn">Сохранить и Начать</button>
+        </section>
+
+        <!-- Экран выполнения -->
+        <section id="view-shop" class="view">
+            <h2>В магазине</h2>
+            
+            <div class="list-container">
+                <img src="images/list.png" alt="Листик" class="list-bg">
+                <ul id="shopping-list" class="items-list">
+                    <!-- Пункты будут здесь -->
+                </ul>
+            </div>
+
+            <div id="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+            <p id="progress-text">0 из 0 выполнено</p>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
 </body>
 </html>
