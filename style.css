@@ -169,10 +169,10 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     flex-wrap: nowrap;
 }
 
-/* Левая колонка — листик */
+/* Левая колонка — листик (сделали шире: 75%) */
 .list-paper {
     position: relative;
-    flex: 1 1 65%;
+    flex: 1 1 75%;
     min-height: 450px;
     min-width: 0;
     display: flex;
@@ -195,7 +195,8 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     position: relative;
     z-index: 2;
     list-style: none;
-    padding: 45px 20px 25px 60px; /* <--- 60px слева, чтобы точно отъехать от края */
+    /* Левый отступ 60px — текст далеко от края листика */
+    padding: 45px 20px 25px 60px;
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -210,13 +211,13 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 .items-list::-webkit-scrollbar { width: 4px; }
 .items-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 2px; }
 
-/* Правая колонка — панель цен */
+/* Правая колонка — панель цен (сделали уже: 25%) */
 .price-panel {
-    flex: 1 1 35%;
+    flex: 1 1 25%;
     background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(2px);
     border-radius: 0 10px 10px 0;
-    padding: 45px 15px 25px 10px;
+    padding: 45px 12px 25px 8px;
     box-sizing: border-box;
     box-shadow: 0 5px 15px rgba(0,0,0,0.15);
     display: flex;
@@ -241,11 +242,11 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 .prices-list::-webkit-scrollbar { width: 4px; }
 .prices-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
 
-/* Синхронизация строк */
+/* Синхронизация строк — высота 40px для чекбоксов */
 .items-list > li,
 .prices-list > li {
-    height: 34px;
-    min-height: 34px;
+    height: 40px;
+    min-height: 40px;
     display: flex;
     align-items: center;
     box-sizing: border-box;
@@ -278,7 +279,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     line-height: 1.2;
     min-width: 0;
     overflow: hidden;
-    padding-left: 10px; /* <--- еще 10px внутри пункта */
+    padding-left: 10px;
 }
 
 .list-item.done { text-decoration: line-through; color: #888; }
@@ -309,11 +310,13 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     text-overflow: ellipsis;
 }
 
+/* Чекбокс — чуть больше и с отступом */
 .checkbox-img {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     cursor: pointer;
     flex-shrink: 0;
+    margin-right: 4px;
 }
 
 /* Крестик — прижат вправо, но с отступом от границы */
@@ -601,13 +604,13 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
         padding: 12px 16px 15px 16px;
         flex: 1 1 auto;
     }
-    .items-list { padding: 40px 12px 15px 25px; }
+    .items-list { padding: 40px 12px 15px 30px; }
     .prices-list {
         flex-direction: row;
         flex-wrap: wrap;
         gap: 4px 10px;
     }
-    .items-list > li { height: auto; min-height: 32px; padding: 4px 0; }
+    .items-list > li { height: auto; min-height: 36px; padding: 4px 0; }
     .prices-list > li {
         height: auto;
         min-height: auto;
