@@ -59,6 +59,10 @@ const modalDate = document.getElementById('modal-plan-date');
 const modalItemsList = document.getElementById('modal-items-list');
 const modalSummary = document.getElementById('modal-plan-summary');
 const modalCloseBtn = document.getElementById('modal-close-btn');
+const modalSaveBtn = document.getElementById('modal-save-btn');
+
+// Текущий открытый план в модалке (для редактирования)
+let modalCurrentPlanId = null;
 
 // --- НАВИГАЦИЯ ---
 tabs.forEach(tab => {
@@ -87,14 +91,12 @@ function pluralize(n, one, few, many) {
     return many;
 }
 
-// Итог по позиции: цена за единицу × количество
 function getItemTotal(item) {
     if (!item.price) return 0;
     const qty = item.qty ? parseFloat(item.qty) : 1;
     return item.price * (isNaN(qty) ? 1 : qty);
 }
 
-// Подпись количества: "2 шт" или "1.5 кг"
 function getQtyLabel(item) {
     if (!item.qty && item.qty !== 0) return '';
     return `${item.qty} ${item.unit || 'шт'}`;
@@ -142,17 +144,18 @@ function renderPlanningList() {
         const itemTotal = getItemTotal(item);
         sum += itemTotal;
 
-        // Левая колонка
         const li = document.createElement('li');
         li.className = 'list-item';
         li.innerHTML = `
             <span class="item-name" title="${item.name}">${item.name}</span>
-            <span class="item-qty">${getQtyLabel(item)}</span>
-            <button class="delete-btn" onclick="deleteItem('${item.id}')">✕</button>
+            <input type="number" class="item-qty-input" value="${item.qty}" min="0" step="0.001" 
+                   onchange="updatePlanningQty('${item.id}', this.value)" 
+                   title="${item.unit}">
+            <span class="item-qty">${item.unit}</span>
+            <button class="delete-btn" onclick="deleteItem('${item.id}')" title="Убрать">✕</button>
         `;
         planningList.appendChild(li);
 
-        // Правая колонка — цена
         const priceLi = document.createElement('li');
         priceLi.textContent = item.price ? formatPrice(itemTotal) : '—';
         planningPrices.appendChild(priceLi);
@@ -161,6 +164,15 @@ function renderPlanningList() {
     const title = document.getElementById('plan-title');
     title.textContent = sum > 0 ? `Новый список (${formatPrice(sum)})` : 'Новый список';
 }
+
+// Обновление количества в процессе планирования
+window.updatePlanningQty = function(id, value) {
+    const item = state.currentItems.find(i => i.id === id);
+    if (!item) return;
+    const qty = parseFloat(value);
+    item.qty = isNaN(qty) || qty < 0 ? 1 : qty;
+    renderPlanningList();
+};
 
 window.deleteItem = function(id) {
     state.currentItems = state.currentItems.filter(item => item.id !== id);
@@ -220,7 +232,6 @@ function renderShoppingList() {
         }
         totalSum += itemTotal;
         
-        // Левая колонка
         const li = document.createElement('li');
         li.className = `list-item ${item.checked ? 'done' : ''}`;
         const imgSrc = item.checked ? 'images/check_mark.png' : 'images/tick_a_box.png';
@@ -231,7 +242,6 @@ function renderShoppingList() {
         `;
         shoppingList.appendChild(li);
 
-        // Правая колонка — цена
         const priceLi = document.createElement('li');
         priceLi.textContent = item.price ? formatPrice(itemTotal) : '—';
         if (item.checked) priceLi.classList.add('done');
@@ -500,29 +510,40 @@ function renderStats() {
     });
 }
 
-// --- МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ ПЛАНА ---
+// --- МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ ПЛАНА (с редактированием) ---
 window.openPlanDetails = function(planId) {
     const plan = state.plans.find(p => p.id === planId);
     if (!plan) return;
 
+    modalCurrentPlanId = planId;
     modalTitle.textContent = plan.name;
     modalDate.textContent = `Создан: ${plan.date || new Date(plan.createdAt).toLocaleString('ru-RU')}`;
 
-    // Заполняем список продуктов
+    renderModalItems(plan);
+    modal.classList.remove('hidden');
+};
+
+function renderModalItems(plan) {
     modalItemsList.innerHTML = '';
     plan.items.forEach(item => {
         const li = document.createElement('li');
         const imgSrc = item.checked ? 'images/check_mark.png' : 'images/tick_a_box.png';
+        const unitPrice = item.price ? formatPrice(item.price) : '—';
+        const totalPrice = item.price ? formatPrice(getItemTotal(item)) : '—';
         li.innerHTML = `
             <img src="${imgSrc}" class="modal-item-check">
             <span class="modal-item-name ${item.checked ? 'checked' : ''}">${item.name}</span>
-            <span class="modal-item-qty">${getQtyLabel(item)}</span>
-            ${item.price ? `<span class="modal-item-price">${formatPrice(getItemTotal(item))}</span>` : ''}
+            <input type="number" class="modal-item-qty-input" value="${item.qty}" min="0" step="0.001"
+                   onchange="updateModalQty('${item.id}', this.value)">
+            <span class="item-qty" style="font-size:11px;">${item.unit || 'шт'}</span>
+            <div class="modal-item-price-info">
+                <span class="modal-item-unit-price">${unitPrice} × ${item.qty}${item.unit || 'шт'}</span>
+                <span class="modal-item-total">${totalPrice}</span>
+            </div>
         `;
         modalItemsList.appendChild(li);
     });
 
-    // Считаем итоги
     const totalSum = plan.items.reduce((acc, i) => acc + getItemTotal(i), 0);
     const spentSum = plan.items.filter(i => i.checked).reduce((acc, i) => acc + getItemTotal(i), 0);
     const checkedCount = plan.items.filter(i => i.checked).length;
@@ -534,22 +555,44 @@ window.openPlanDetails = function(planId) {
             <p>Всего по плану: <span class="modal-total">${formatPrice(totalSum)}</span></p>
         ` : ''}
     `;
+}
 
-    modal.classList.remove('hidden');
+// Редактирование количества прямо в модалке
+window.updateModalQty = function(itemId, value) {
+    const plan = state.plans.find(p => p.id === modalCurrentPlanId);
+    if (!plan) return;
+    const item = plan.items.find(i => i.id === itemId);
+    if (!item) return;
+
+    const qty = parseFloat(value);
+    item.qty = isNaN(qty) || qty < 0 ? 1 : qty;
+    saveToLocalStorage();
+    renderModalItems(plan);
+    
+    // Если это активный план — обновим и «Выполнение»
+    if (plan.id === state.activePlanId) {
+        renderShoppingList();
+    }
 };
 
 modalCloseBtn.addEventListener('click', () => {
     modal.classList.add('hidden');
 });
 
-// Клик по фону закрывает модалку
+modalSaveBtn.addEventListener('click', () => {
+    saveToLocalStorage();
+    modal.classList.add('hidden');
+    renderSavedPlans();
+    renderStats();
+    if (state.activePlanId === modalCurrentPlanId) renderShoppingList();
+});
+
 modal.addEventListener('click', (e) => {
     if (e.target === modal) {
         modal.classList.add('hidden');
     }
 });
 
-// Esc закрывает модалку
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
         modal.classList.add('hidden');
