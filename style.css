@@ -195,7 +195,8 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     position: relative;
     z-index: 2;
     list-style: none;
-    padding: 45px 25px 25px 22px; /* правый отступ больше, чтобы крестик был внутри */
+    /* ВОТ ТУТ: left padding 35px — сдвигает текст от края листика */
+    padding: 45px 25px 25px 35px;
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -278,11 +279,12 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     line-height: 1.2;
     min-width: 0;
     overflow: hidden;
+    padding-left: 5px; /* дополнительный микросдвиг текста */
 }
 
 .list-item.done { text-decoration: line-through; color: #888; }
 
-/* Название — не растягивается, чуть-чуть отступа слева */
+/* Название — не растягивается, обрезается с ... */
 .item-name {
     flex: 0 1 auto;
     min-width: 0;
@@ -290,7 +292,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     text-overflow: ellipsis;
     white-space: nowrap;
     color: #222;
-    padding-left: 2px;
 }
 
 /* Количество — сразу после названия */
@@ -327,7 +328,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     padding: 0 4px;
     line-height: 1;
     margin-left: auto;
-    margin-right: 8px; /* отступ от границы листика */
+    margin-right: 8px;
 }
 
 /* ===== КНОПКИ, ПРОГРЕСС, СУММА ===== */
@@ -601,7 +602,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
         padding: 12px 16px 15px 16px;
         flex: 1 1 auto;
     }
-    .items-list { padding: 40px 10px 15px 18px; }
+    .items-list { padding: 40px 12px 15px 25px; }
     .prices-list {
         flex-direction: row;
         flex-wrap: wrap;
