@@ -186,11 +186,11 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 .text-panel {
     position: relative;
     z-index: 2;
-    flex: 1 1 60%; /* 60% — текстовая часть */
-    background: rgba(255, 255, 255, 0.78);
+    flex: 1 1 70%; /* 70% — тексту, чтобы названия точно влезли */
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(2px);
     border-radius: 10px 0 0 10px;
-    padding: 15px 6px 15px 18px;
+    padding: 15px 10px 15px 16px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -198,15 +198,15 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     overflow: hidden;
 }
 
-/* Полупрозрачная панель под ценами (справа) — ШИРЕ */
+/* Полупрозрачная панель под ценами (справа) */
 .price-panel {
     position: relative;
     z-index: 2;
-    flex: 1 1 40%; /* 40% — панель цен */
+    flex: 1 1 30%; /* 30% — ценам */
     background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(2px);
     border-radius: 0 10px 10px 0;
-    padding: 15px 10px 15px 6px;
+    padding: 15px 8px 15px 4px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -235,7 +235,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     border-bottom: 1px solid rgba(0,0,0,0.06);
 }
 
-/* Цены — компактнее, без обрезки */
 .prices-list > li {
     justify-content: flex-end;
     color: #2E7D32;
@@ -243,7 +242,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     font-size: 12.5px;
     white-space: nowrap;
     padding-right: 2px;
-    border-bottom: 1px solid rgba(0,0,0,0.06);
     overflow: visible;
     letter-spacing: -0.4px;
 }
@@ -253,6 +251,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     text-decoration: line-through;
 }
 
+/* Пункт списка */
 .list-item {
     display: flex;
     align-items: center;
@@ -269,18 +268,19 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 
 .list-item.done { text-decoration: line-through; color: #888; }
 
+/* Название — ГАРАНТИРОВАННО видно */
 .item-name {
     flex: 1 1 auto;
-    min-width: 0;
+    min-width: 80px; /* защита: минимум 80px под текст, чтобы не схлопывался */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     color: #222;
 }
 
-/* Редактируемое количество в планировании */
+/* Поле ввода количества */
 .item-qty-input {
-    width: 55px;
+    width: 50px;
     padding: 2px 4px;
     border: 1px solid #ccc;
     border-radius: 6px;
@@ -300,11 +300,11 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     font-size: 12px;
     font-weight: bold;
     background: #f0f0f0;
-    padding: 1px 6px;
+    padding: 1px 4px;
     border-radius: 8px;
     white-space: nowrap;
     flex-shrink: 0;
-    margin-left: 4px;
+    margin-left: 2px;
 }
 
 .checkbox-img {
@@ -322,12 +322,12 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     font-size: 16px;
     cursor: pointer;
     flex-shrink: 0;
-    padding: 0 6px;
+    padding: 0 4px;
     line-height: 1;
-    margin-left: 6px;
+    margin-left: 4px;
 }
 
-/* Кнопки */
+/* Остальные стили (кнопки, меню, статистика) — без изменений */
 .main-btn {
     padding: 12px 30px;
     border: none;
@@ -412,7 +412,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 .empty-state .empty-hint { font-size: 14px; font-weight: normal; color: #777; margin-bottom: 20px; line-height: 1.4; }
 .empty-state .main-btn { margin-bottom: 0; font-size: 16px; padding: 10px 24px; }
 
-/* Меню */
 #side-menu {
     position: fixed;
     top: 0; left: 0;
@@ -795,9 +794,9 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
         font-size: 13px;
         justify-content: flex-start;
     }
-    .item-name { font-size: 14px; min-width: 30px; }
-    .item-qty { font-size: 11px; max-width: 50px; }
-    .item-qty-input { width: 48px; font-size: 11px; }
+    .item-name { font-size: 14px; min-width: 40px; }
+    .item-qty { font-size: 11px; }
+    .item-qty-input { width: 45px; font-size: 11px; }
     .delete-btn { font-size: 14px; }
     .list-bg { border-radius: 12px; }
 }
