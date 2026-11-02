@@ -359,10 +359,11 @@ function renderPages(container, pages, mode) {
             } else {
                 const imgSrc = item.checked ? 'images/check_mark.png' : 'images/tick_a_box.png';
                 li.innerHTML = `
-                    <img src="${imgSrc}" class="checkbox-img" onclick="toggleCheck('${item.id}')" alt="">
-                    <span class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
-                    <span class="item-qty">${getQtyLabel(item)}</span>
-                `;
+    <img src="${imgSrc}" class="checkbox-img" onclick="toggleCheck('${item.id}')" alt="">
+    <span class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
+    <span class="item-qty">${getQtyLabel(item)}</span>
+    <span class="item-price-display">${item.price ? formatPrice(getItemTotal(item)) : '—'}</span>
+`;
             }
             ul.appendChild(li);
         });
