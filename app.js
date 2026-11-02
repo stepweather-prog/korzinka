@@ -8,7 +8,7 @@ let state = {
     selectedPlans: []
 };
 
-const ITEMS_PER_PAGE = 10; // Сколько строк на одном листике
+const ITEMS_PER_PAGE = 10;
 
 // ===================== DOM =====================
 const tabs = document.querySelectorAll('.tab');
@@ -54,7 +54,6 @@ const selectModeActions = document.getElementById('select-mode-actions');
 const cancelSelectBtn = document.getElementById('cancel-select-btn');
 const deleteSelectedBtn = document.getElementById('delete-selected-btn');
 
-// Модалка
 const modal = document.getElementById('plan-details-modal');
 const modalTitle = document.getElementById('modal-plan-title');
 const modalDate = document.getElementById('modal-plan-date');
@@ -141,7 +140,8 @@ function addItem() {
         qty: isNaN(qty) ? 1 : qty,
         unit: unit,
         price: isNaN(price) ? null : price,
-        checked: false
+        checked: false,
+        selectedForDeletion: false
     });
     
     addInput.value = '';
@@ -159,10 +159,19 @@ function renderPlanningList() {
     const title = document.getElementById('plan-title');
     title.textContent = sum > 0 ? `Новый список (${formatPrice(sum)})` : 'Новый список';
 
-    // Если список пуст — ничего не рисуем (никаких листиков)
+    // Панель удаления
+    const selectedCount = state.currentItems.filter(i => i.selectedForDeletion).length;
+    const controls = document.getElementById('planning-controls');
     if (state.currentItems.length === 0) {
         planningPagesContainer.innerHTML = '';
+        controls.classList.add('hidden');
         return;
+    }
+    if (selectedCount > 0) {
+        controls.classList.remove('hidden');
+        document.getElementById('delete-selected-items-btn').textContent = `🗑 Удалить выбранные (${selectedCount})`;
+    } else {
+        controls.classList.add('hidden');
     }
 
     const pages = chunk(state.currentItems, ITEMS_PER_PAGE);
@@ -177,10 +186,21 @@ window.updatePlanningQty = function(id, value) {
     renderPlanningList();
 };
 
-window.deleteItem = function(id) {
-    state.currentItems = state.currentItems.filter(item => item.id !== id);
+window.togglePlanningSelect = function(id) {
+    const item = state.currentItems.find(i => i.id === id);
+    if (!item) return;
+    item.selectedForDeletion = !item.selectedForDeletion;
     renderPlanningList();
 };
+
+document.getElementById('delete-selected-items-btn').addEventListener('click', () => {
+    const selectedCount = state.currentItems.filter(i => i.selectedForDeletion).length;
+    if (selectedCount === 0) return;
+    if (!confirm(`Удалить ${selectedCount} ${pluralize(selectedCount, 'позицию', 'позиции', 'позиций')}?`)) return;
+    
+    state.currentItems = state.currentItems.filter(i => !i.selectedForDeletion);
+    renderPlanningList();
+});
 
 startShoppingBtn.addEventListener('click', () => {
     if (state.currentItems.length === 0) {
@@ -188,10 +208,12 @@ startShoppingBtn.addEventListener('click', () => {
         return;
     }
 
+    const itemsToSave = state.currentItems.map(i => ({ ...i, selectedForDeletion: false }));
+
     const newPlan = {
         id: Date.now().toString(),
         name: `План от ${new Date().toLocaleDateString('ru-RU')}`,
-        items: [...state.currentItems],
+        items: itemsToSave,
         date: new Date().toLocaleString('ru-RU'),
         createdAt: new Date().toISOString()
     };
@@ -211,7 +233,6 @@ startShoppingBtn.addEventListener('click', () => {
 function renderShoppingList() {
     const activePlan = state.plans.find(p => p.id === state.activePlanId);
     
-    // Если нет активного плана или он пустой — заглушка, листик не рисуем
     if (!activePlan || activePlan.items.length === 0) {
         noActivePlan.classList.remove('hidden');
         activePlanContent.classList.add('hidden');
@@ -305,12 +326,13 @@ function renderPages(container, pages, mode) {
             li.className = 'list-item' + (item.checked ? ' done' : '');
 
             if (mode === 'planning') {
+                const imgSrc = item.selectedForDeletion ? 'images/check_mark.png' : 'images/tick_a_box.png';
                 li.innerHTML = `
+                    <img src="${imgSrc}" class="item-checkbox" onclick="togglePlanningSelect('${item.id}')" alt="">
                     <span class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
                     <input type="number" class="item-qty-input" value="${item.qty}" min="0" step="0.001"
                            onchange="updatePlanningQty('${item.id}', this.value)">
                     <span class="item-qty">${item.unit}</span>
-                    <button class="delete-btn" onclick="deleteItem('${item.id}')" title="Убрать">✕</button>
                 `;
             } else {
                 const imgSrc = item.checked ? 'images/check_mark.png' : 'images/tick_a_box.png';
@@ -380,7 +402,7 @@ function switchMenuTab(tab) {
     }
 }
 
-// ===================== РЕЖИМ ВЫБОРА =====================
+// ===================== РЕЖИМ ВЫБОРА ПЛАНОВ =====================
 selectModeBtn.addEventListener('click', enterSelectMode);
 cancelSelectBtn.addEventListener('click', exitSelectMode);
 deleteSelectedBtn.addEventListener('click', deleteSelectedPlans);
