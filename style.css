@@ -170,12 +170,12 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     position: relative;
     display: flex;
     width: 100%;
-    max-width: 700px; /* Как у формы! */
+    max-width: 700px; 
     margin: 0 auto 20px auto;
     align-items: stretch;
     flex-wrap: nowrap;
     min-height: 380px;
-    padding: 0; /* Панели на всю ширину */
+    padding: 0; /* Убрали отступы по краям */
     box-sizing: border-box;
 }
 
@@ -191,11 +191,11 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
-/* Панель текста — 70% */
+/* Панель текста — ШИРОКАЯ (80%) */
 .text-panel {
     position: relative;
     z-index: 2;
-    flex: 1 1 70%;
+    flex: 1 1 80%;
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(2px);
     border-radius: 10px 0 0 10px;
@@ -207,15 +207,15 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     overflow: hidden;
 }
 
-/* Панель цен — 30% */
+/* Панель цен — УЗКАЯ (20%) */
 .price-panel {
     position: relative;
     z-index: 2;
-    flex: 1 1 30%;
+    flex: 1 1 20%;
     background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(2px);
     border-radius: 0 10px 10px 0;
-    padding: 20px 10px 20px 5px;
+    padding: 20px 8px 20px 5px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -276,7 +276,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 
 .list-item.done { text-decoration: line-through; color: #888; }
 
-/* Название — влезает свободно */
+/* Название — главный элемент, занимает всё свободное место */
 .item-name {
     flex: 1 1 auto;
     min-width: 0;
@@ -770,7 +770,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     border-radius: 6px;
 }
 
-/* Адаптив */
+/* Адаптив для мобилок */
 @media (max-width: 640px) {
     .add-item-form { flex-wrap: wrap; }
     #new-item-input { width: 100%; flex-basis: 100%; order: 1; }
