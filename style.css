@@ -155,12 +155,22 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     line-height: 1;
 }
 
-/* ===== КАЖДАЯ «СТРАНИЦА» — НОВЫЙ ЛИСТИК ===== */
+/* Панель массового удаления */
+.planning-controls {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.planning-controls.hidden { display: none; }
+
+/* Страницы листиков */
 .list-wrapper {
     position: relative;
     display: flex;
     width: 100%;
-    max-width: 700px;
+    max-width: 760px;
     margin: 0 auto 20px auto;
     align-items: stretch;
     flex-wrap: nowrap;
@@ -169,7 +179,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     box-sizing: border-box;
 }
 
-/* Декоративный листик — снизу, под панелями */
 .list-bg {
     position: absolute;
     top: 0; left: 0;
@@ -182,11 +191,10 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
-/* Полупрозрачная панель под текстом (слева) */
 .text-panel {
     position: relative;
     z-index: 2;
-    flex: 1 1 70%; /* 70% — тексту, чтобы названия точно влезли */
+    flex: 1 1 68%;
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(2px);
     border-radius: 10px 0 0 10px;
@@ -198,11 +206,10 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     overflow: hidden;
 }
 
-/* Полупрозрачная панель под ценами (справа) */
 .price-panel {
     position: relative;
     z-index: 2;
-    flex: 1 1 30%; /* 30% — ценам */
+    flex: 1 1 32%;
     background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(2px);
     border-radius: 0 10px 10px 0;
@@ -255,8 +262,8 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 .list-item {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 15px;
+    gap: 4px;
+    font-size: 14px;
     font-weight: 600;
     color: #222;
     width: 100%;
@@ -268,10 +275,10 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 
 .list-item.done { text-decoration: line-through; color: #888; }
 
-/* Название — ГАРАНТИРОВАННО видно */
+/* Название */
 .item-name {
     flex: 1 1 auto;
-    min-width: 80px; /* защита: минимум 80px под текст, чтобы не схлопывался */
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -280,8 +287,8 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 
 /* Поле ввода количества */
 .item-qty-input {
-    width: 50px;
-    padding: 2px 4px;
+    width: 40px;
+    padding: 2px 3px;
     border: 1px solid #ccc;
     border-radius: 6px;
     font-size: 12px;
@@ -289,45 +296,34 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     color: #444;
     background: #fff;
     flex-shrink: 0;
-    margin-left: 4px;
+    margin-left: 2px;
 }
 
 .item-qty-input:focus { outline: none; border-color: #4CAF50; }
 
-/* Отображение количества */
+/* Отображение единицы */
 .item-qty {
-    color: #444;
+    color: #555;
     font-size: 12px;
-    font-weight: bold;
-    background: #f0f0f0;
-    padding: 1px 4px;
-    border-radius: 8px;
+    font-weight: normal;
+    background: none;
+    padding: 0;
     white-space: nowrap;
     flex-shrink: 0;
-    margin-left: 2px;
+    margin-left: 0;
 }
 
-.checkbox-img {
+/* Кружочек / галочка */
+.checkbox-img,
+.item-checkbox {
     width: 24px;
     height: 24px;
     cursor: pointer;
     flex-shrink: 0;
-    margin-right: 4px;
+    margin-right: 2px;
 }
 
-.delete-btn {
-    background: none;
-    border: none;
-    color: #ff5252;
-    font-size: 16px;
-    cursor: pointer;
-    flex-shrink: 0;
-    padding: 0 4px;
-    line-height: 1;
-    margin-left: 4px;
-}
-
-/* Остальные стили (кнопки, меню, статистика) — без изменений */
+/* Кнопки */
 .main-btn {
     padding: 12px 30px;
     border: none;
@@ -412,6 +408,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 .empty-state .empty-hint { font-size: 14px; font-weight: normal; color: #777; margin-bottom: 20px; line-height: 1.4; }
 .empty-state .main-btn { margin-bottom: 0; font-size: 16px; padding: 10px 24px; }
 
+/* Меню */
 #side-menu {
     position: fixed;
     top: 0; left: 0;
@@ -794,9 +791,8 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
         font-size: 13px;
         justify-content: flex-start;
     }
-    .item-name { font-size: 14px; min-width: 40px; }
+    .item-name { font-size: 14px; min-width: 30px; }
     .item-qty { font-size: 11px; }
-    .item-qty-input { width: 45px; font-size: 11px; }
-    .delete-btn { font-size: 14px; }
+    .item-qty-input { width: 38px; font-size: 11px; }
     .list-bg { border-radius: 12px; }
 }
