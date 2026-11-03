@@ -46,9 +46,20 @@ self.addEventListener('fetch', (e) => {
     );
 });
 
-// Сообщение из основного окна: "хочу обновиться"
-self.addEventListener('message', (e) => {
-    if (e.data && e.data.type === 'SKIP_WAITING') {
+// Сообщения из основного окна
+self.addEventListener('message', async (e) => {
+    if (!e.data) return;
+
+    if (e.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
+    }
+
+    if (e.data.type === 'CLEAR_CACHES') {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+        self.skipWaiting();
+        if (e.source) {
+            e.source.postMessage({ type: 'CACHES_CLEARED' });
+        }
     }
 });
