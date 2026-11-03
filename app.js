@@ -37,6 +37,7 @@ const noActivePlan = document.getElementById('no-active-plan');
 const activePlanContent = document.getElementById('active-plan-content');
 const deleteActivePlanBtn = document.getElementById('delete-active-plan-btn');
 const shareActivePlanBtn = document.getElementById('share-active-plan-btn');
+const downloadActivePlanBtn = document.getElementById('download-active-plan-btn');
 
 const menuTabPlans = document.getElementById('menu-tab-plans');
 const menuTabStats = document.getElementById('menu-tab-stats');
@@ -64,7 +65,12 @@ const modalSummary = document.getElementById('modal-plan-summary');
 const modalCloseBtn = document.getElementById('modal-close-btn');
 const modalSaveBtn = document.getElementById('modal-save-btn');
 const modalShareBtn = document.getElementById('modal-share-btn');
+const modalDownloadBtn = document.getElementById('modal-download-btn');
+
 const sharePlanningBtn = document.getElementById('share-planning-btn');
+const downloadPlanningBtn = document.getElementById('download-planning-btn');
+const importPlanBtn = document.getElementById('import-plan-btn');
+const importFileInput = document.getElementById('import-file-input');
 
 let modalCurrentPlanId = null;
 
@@ -122,7 +128,7 @@ function escapeHtml(str) {
         .replace(/"/g, '&quot;');
 }
 
-// ===================== СЕРИАЛИЗАЦИЯ ПЛАНА =====================
+// ===================== СЕРИАЛИЗАЦИЯ ДЛЯ ССЫЛКИ =====================
 function encodePlan(plan) {
     const payload = {
         n: plan.name,
@@ -171,6 +177,7 @@ function decodePlan(encoded) {
     }
 }
 
+// ===================== ПОДЕЛИТЬСЯ ССЫЛКОЙ =====================
 function sharePlan(plan) {
     if (!plan || !plan.items || plan.items.length === 0) {
         alert('Список пуст, нечем делиться');
@@ -201,6 +208,89 @@ function fallbackCopy(text) {
     }
 }
 
+// ===================== СКАЧАТЬ ПЛАН (JSON-ФАЙЛ) =====================
+function downloadPlan(plan) {
+    if (!plan || !plan.items || plan.items.length === 0) {
+        alert('Список пуст, нечего скачивать');
+        return;
+    }
+    
+    const exportData = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        plan: {
+            name: plan.name,
+            date: plan.date,
+            createdAt: plan.createdAt,
+            items: plan.items.map(it => ({
+                name: it.name,
+                qty: it.qty,
+                unit: it.unit,
+                price: it.price,
+                checked: it.checked
+            }))
+        }
+    };
+
+    const json = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeName = plan.name.replace(/[^\wа-яёА-ЯЁ\-]+/gi, '_').slice(0, 40) || 'korzinka-plan';
+    a.href = url;
+    a.download = `${safeName}-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// ===================== ИМПОРТ ПЛАНА ИЗ ФАЙЛА =====================
+function importPlanFromFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            const rawPlan = data.plan || data;
+
+            if (!rawPlan.items || !Array.isArray(rawPlan.items)) {
+                alert('В файле нет корректного списка товаров');
+                return;
+            }
+
+            const imported = {
+                id: Date.now().toString(),
+                name: rawPlan.name || 'Импортированный план',
+                date: rawPlan.date || new Date().toLocaleString('ru-RU'),
+                createdAt: rawPlan.createdAt || new Date().toISOString(),
+                items: rawPlan.items.map(it => ({
+                    id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+                    name: it.name || it.n || 'Товар',
+                    qty: it.qty || it.q || 1,
+                    unit: it.unit || it.u || 'шт',
+                    price: (typeof it.price !== 'undefined' ? it.price : (typeof it.p !== 'undefined' ? it.p : null)),
+                    checked: !!(it.checked || it.ch),
+                    selectedForDeletion: false
+                }))
+            };
+
+            state.plans.push(imported);
+            state.activePlanId = imported.id;
+            saveToLocalStorage();
+
+            renderSavedPlans();
+            renderShoppingList();
+            document.getElementById('tab-shop').click();
+            alert(`План «${imported.name}» импортирован (${imported.items.length} позиций)`);
+        } catch (err) {
+            console.error(err);
+            alert('Не удалось прочитать файл. Убедитесь, что это .json-файл из Корзинки.');
+        }
+    };
+    reader.readAsText(file);
+}
+
+// ===================== ИМПОРТ ИЗ URL =====================
 function checkImportFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const encoded = params.get('import');
@@ -375,6 +465,20 @@ sharePlanningBtn.addEventListener('click', () => {
     sharePlan(planToShare);
 });
 
+downloadPlanningBtn.addEventListener('click', () => {
+    if (state.currentItems.length === 0) {
+        alert('Сначала добавьте продукты');
+        return;
+    }
+    const planToSave = {
+        name: `План от ${new Date().toLocaleDateString('ru-RU')}`,
+        date: new Date().toLocaleString('ru-RU'),
+        createdAt: new Date().toISOString(),
+        items: state.currentItems
+    };
+    downloadPlan(planToSave);
+});
+
 // ===================== ВЫПОЛНЕНИЕ =====================
 function renderShoppingList() {
     const activePlan = state.plans.find(p => p.id === state.activePlanId);
@@ -483,6 +587,15 @@ shareActivePlanBtn.addEventListener('click', () => {
     sharePlan(activePlan);
 });
 
+downloadActivePlanBtn.addEventListener('click', () => {
+    const activePlan = state.plans.find(p => p.id === state.activePlanId);
+    if (!activePlan) {
+        alert('Нет активного плана');
+        return;
+    }
+    downloadPlan(activePlan);
+});
+
 // ===================== РЕНДЕР СТРАНИЦ =====================
 function renderPages(container, pages, mode) {
     container.innerHTML = '';
@@ -570,6 +683,18 @@ function switchMenuTab(tab) {
     }
 }
 
+// ===================== ИМПОРТ КНОПКА =====================
+importPlanBtn.addEventListener('click', () => {
+    importFileInput.value = '';
+    importFileInput.click();
+});
+
+importFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    importPlanFromFile(file);
+});
+
 // ===================== РЕЖИМ ВЫБОРА ПЛАНОВ =====================
 selectModeBtn.addEventListener('click', enterSelectMode);
 cancelSelectBtn.addEventListener('click', exitSelectMode);
@@ -579,6 +704,7 @@ function enterSelectMode() {
     state.selectMode = true;
     state.selectedPlans = [];
     selectModeBtn.classList.add('hidden');
+    importPlanBtn.classList.add('hidden');
     selectModeActions.classList.remove('hidden');
     renderSavedPlans();
 }
@@ -587,6 +713,7 @@ function exitSelectMode() {
     state.selectMode = false;
     state.selectedPlans = [];
     selectModeBtn.classList.remove('hidden');
+    importPlanBtn.classList.remove('hidden');
     selectModeActions.classList.add('hidden');
     renderSavedPlans();
 }
@@ -665,7 +792,8 @@ function renderSavedPlans() {
                 <div class="plan-progress"><div class="plan-progress-bar" style="width: ${percent}%"></div></div>
                 <div style="display:flex; gap:5px; margin-top:10px; flex-wrap:wrap;">
                     <button class="main-btn" style="font-size: 14px; padding: 8px; margin:0; flex:1; min-width:130px;" onclick="resumePlan('${plan.id}')">Выполнить снова</button>
-                    <button class="share-plan-small" onclick="shareSavedPlan('${plan.id}')">🔗 Поделиться</button>
+                    <button class="share-plan-small" onclick="shareSavedPlan('${plan.id}')">🔗</button>
+                    <button class="share-plan-small" style="background: rgba(76, 175, 80, 0.9);" onclick="downloadSavedPlan('${plan.id}')">💾</button>
                 </div>
             `;
         }
@@ -677,6 +805,12 @@ window.shareSavedPlan = function(planId) {
     const plan = state.plans.find(p => p.id === planId);
     if (!plan) return;
     sharePlan(plan);
+};
+
+window.downloadSavedPlan = function(planId) {
+    const plan = state.plans.find(p => p.id === planId);
+    if (!plan) return;
+    downloadPlan(plan);
 };
 
 window.resumePlan = function(planId) {
@@ -899,6 +1033,14 @@ modalShareBtn.addEventListener('click', () => {
              || state.history.find(p => p.id === modalCurrentPlanId);
     if (!plan) return;
     sharePlan(plan);
+});
+
+modalDownloadBtn.addEventListener('click', () => {
+    if (!modalCurrentPlanId) return;
+    const plan = state.plans.find(p => p.id === modalCurrentPlanId)
+             || state.history.find(p => p.id === modalCurrentPlanId);
+    if (!plan) return;
+    downloadPlan(plan);
 });
 
 modal.addEventListener('click', (e) => {
