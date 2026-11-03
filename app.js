@@ -1077,10 +1077,23 @@ async function checkLatestVersion() {
     }
 }
 
+async function clearAllCaches() {
+    if (!('caches' in window)) return;
+    try {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+        console.log('Все кэши удалены:', keys);
+    } catch (e) {
+        console.error('Ошибка очистки кэшей:', e);
+    }
+}
+
 if (updateAppBtn) {
     updateAppBtn.addEventListener('click', async () => {
         if (!('serviceWorker' in navigator)) {
-            alert('Service Worker не поддерживается. Обновите страницу вручную (Ctrl+F5).');
+            updateAppBtn.textContent = '⏳ Чищу кэш...';
+            await clearAllCaches();
+            window.location.reload();
             return;
         }
 
@@ -1088,6 +1101,7 @@ if (updateAppBtn) {
         updateAppBtn.disabled = true;
 
         const latest = await checkLatestVersion();
+
         if (!latest) {
             alert('Не удалось проверить новую версию (нет интернета?)');
             updateAppBtn.textContent = '🔄 Обновить приложение';
@@ -1095,38 +1109,42 @@ if (updateAppBtn) {
             return;
         }
 
-        if (latest === currentVersion) {
-            const force = confirm(
-                `У вас уже последняя версия (${currentVersion}).\n\n` +
-                `Всё равно переустановить кэш? Это может помочь, если что-то сломалось.`
-            );
-            if (!force) {
-                updateAppBtn.textContent = '🔄 Обновить приложение';
-                updateAppBtn.disabled = false;
-                return;
+        // Всегда сохраняем последнюю версию
+        localStorage.setItem('korzinka_version', latest);
+
+        updateAppBtn.textContent = '⏳ Обновляю...';
+
+        try {
+            const reg = await navigator.serviceWorker.getRegistration();
+
+            if (reg) {
+                try { await reg.update(); } catch (e) { console.log('update failed', e); }
+
+                if (reg.waiting) {
+                    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    await new Promise(r => setTimeout(r, 800));
+                }
+
+                if (reg.installing) {
+                    await new Promise(r => setTimeout(r, 800));
+                }
             }
-        }
 
-        updateAppBtn.textContent = '⏳ Устанавливаю...';
+            // Принудительно чистим все кэши
+            await clearAllCaches();
 
-        const reg = await navigator.serviceWorker.getRegistration();
-        if (reg) {
-            try { await reg.update(); } catch (e) {}
-            if (reg.waiting) {
-                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-            }
-        }
+            await new Promise(r => setTimeout(r, 300));
 
-        let reloaded = false;
-        const doReload = () => {
-            if (reloaded) return;
-            reloaded = true;
-            localStorage.setItem('korzinka_version', latest);
+            // Перезагружаем с обходом кэша браузера
+            const url = new URL(window.location.href);
+            url.searchParams.set('_v', Date.now());
+            window.location.href = url.toString();
+
+        } catch (e) {
+            console.error('Ошибка при обновлении:', e);
+            await clearAllCaches();
             window.location.reload();
-        };
-
-        navigator.serviceWorker.addEventListener('controllerchange', doReload);
-        setTimeout(doReload, 4000);
+        }
     });
 }
 
@@ -1146,6 +1164,14 @@ if (updateAppBtn) {
     }
 })();
 
+// Очищаем ?_v= из URL после перезагрузки
+(function cleanUrlParam() {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('_v')) {
+        url.searchParams.delete('_v');
+        window.history.replaceState({}, '', url.toString());
+    }
+})();
 // ===================== ПАМЯТЬ =====================
 function saveToLocalStorage() {
     localStorage.setItem('korzinka_plans', JSON.stringify(state.plans));
