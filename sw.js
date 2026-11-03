@@ -1,23 +1,54 @@
-const CACHE_NAME = 'korzinka-v7';
+const CACHE_NAME = 'korzinka-v12'; // ← при каждом обновлении файлов поднимай версию
 const ASSETS = [
-  './',
-  './index.html',
-  './style.css',
-  './app.js',
-  './images/icon.png',
-  './images/lit_cozy.png',
-  './images/list.png',
-  './images/tick_a_box.png',
-  './images/check_mark.png',
-  './images/happy_smiley_magnit.png'
+    './',
+    './index.html',
+    './style.css',
+    './app.js',
+    './manifest.json',
+    './images/icon.png',
+    './images/lit_cozy.png',
+    './images/list.png',
+    './images/tick_a_box.png',
+    './images/check_mark.png',
+    './images/happy_smiley_magnit.png'
 ];
 
+// Установка: кэшируем всё + сразу активируемся (не ждём закрытия вкладок)
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
+    e.waitUntil(
+        caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+            .then(() => self.skipWaiting())
+    );
 });
 
+// Активация: удаляем старые кэши, чтобы место не копилось
+self.addEventListener('activate', (e) => {
+    e.waitUntil(
+        caches.keys().then(keys =>
+            Promise.all(
+                keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+            )
+        ).then(() => self.clients.claim())
+    );
+});
+
+// Fetch: сеть в приоритете, кэш — как fallback
 self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then(response => response || fetch(e.request))
-  );
+    e.respondWith(
+        fetch(e.request).then(response => {
+            // Кэшируем только успешные GET-запросы
+            if (e.request.method === 'GET' && response.status === 200) {
+                const copy = response.clone();
+                caches.open(CACHE_NAME).then(cache => cache.put(e.request, copy));
+            }
+            return response;
+        }).catch(() => caches.match(e.request))
+    );
+});
+
+// Сообщение из основного окна: "хочу обновиться"
+self.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
 });
