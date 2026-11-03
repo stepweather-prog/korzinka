@@ -291,12 +291,16 @@ window.toggleCheck = function(itemId) {
     if (item) {
         item.checked = !item.checked;
 
+        // Если ВСЁ отмечено — сохраняем в историю КАЖДЫЙ РАЗ (новое выполнение)
         const allChecked = activePlan.items.length > 0 && activePlan.items.every(i => i.checked);
         if (allChecked) {
-            const existsInHistory = state.history.find(p => p.id === activePlan.id);
-            if (!existsInHistory) {
-                state.history.push({ ...activePlan, completedAt: new Date().toISOString() });
-            }
+            const completionId = activePlan.id + '-' + Date.now(); // уникальный id
+            state.history.push({
+                ...activePlan,
+                id: completionId, // новый id для записи в истории
+                originalPlanId: activePlan.id, // запоминаем, откуда пришло
+                completedAt: new Date().toISOString()
+            });
         }
 
         saveToLocalStorage();
@@ -533,12 +537,10 @@ window.resumePlan = function(planId) {
     if (checkedCount > 0 && checkedCount < plan.items.length) {
         if (!confirm('Этот план не доделан. Продолжить его или начать заново с нуля?')) {
             plan.items.forEach(i => i.checked = false);
-            state.history = state.history.filter(h => h.id !== plan.id);
         }
     } else if (checkedCount === plan.items.length) {
         if (confirm('Этот план уже выполнен. Начать заново?')) {
             plan.items.forEach(i => i.checked = false);
-            state.history = state.history.filter(h => h.id !== plan.id);
         } else {
             return;
         }
@@ -706,9 +708,25 @@ window.updateModalQty = function(itemId, value) {
     saveToLocalStorage();
     renderModalItems(plan);
     
-    if (plan.id === state.activePlanId) {
-        renderShoppingList();
-    }
+    if (plan.id === state.activePlanId) renderShoppingList();
+    renderStats();
+    renderSavedPlans();
+};
+
+window.updateModalPrice = function(itemId, value) {
+    let plan = state.plans.find(p => p.id === modalCurrentPlanId);
+    if (!plan) plan = state.history.find(p => p.id === modalCurrentPlanId);
+    if (!plan) return;
+
+    const item = plan.items.find(i => i.id === itemId);
+    if (!item) return;
+
+    const price = parseFloat(value);
+    item.price = isNaN(price) || price < 0 ? null : price;
+    saveToLocalStorage();
+    renderModalItems(plan);
+    
+    if (plan.id === state.activePlanId) renderShoppingList();
     renderStats();
     renderSavedPlans();
 };
