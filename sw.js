@@ -1,4 +1,4 @@
-const CACHE_NAME = 'korzinka-v1.1'; // ← при каждом обновлении файлов поднимай версию
+const CACHE_NAME = 'korzinka-v1.2'; // ← при каждом обновлении файлов поднимай версию
 const ASSETS = [
     './',
     './index.html',
