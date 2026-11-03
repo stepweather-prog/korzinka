@@ -32,6 +32,8 @@
 
         <div id="plans-controls">
             <button id="select-mode-btn" class="small-btn">☑ Выбрать</button>
+            <button id="import-plan-btn" class="small-btn" style="background:#2196F3; color:white;">📥 Импорт</button>
+            <input type="file" id="import-file-input" accept=".json,application/json" style="display:none;">
             <div id="select-mode-actions" class="hidden">
                 <button id="cancel-select-btn" class="small-btn cancel">Отмена</button>
                 <button id="delete-selected-btn" class="small-btn danger">Удалить выбранные</button>
@@ -66,7 +68,6 @@
             <button id="tab-shop" class="tab">Выполнение</button>
         </div>
 
-        <!-- ЭКРАН ПЛАНИРОВАНИЯ -->
         <section id="view-plan" class="view active">
             <h2 id="plan-title">Новый список</h2>
             
@@ -93,11 +94,13 @@
 
             <div id="planning-pages"></div>
             
-            <button id="start-shopping-btn" class="main-btn">Сохранить и Начать</button>
-            <button id="share-planning-btn" class="share-active-btn" style="margin-top:-10px;">🔗 Поделиться текущим списком</button>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom:20px;">
+                <button id="start-shopping-btn" class="main-btn" style="margin:0;">Сохранить и Начать</button>
+                <button id="share-planning-btn" class="share-active-btn" style="margin:0;">🔗 Поделиться</button>
+                <button id="download-planning-btn" class="share-active-btn" style="margin:0; background: rgba(76, 175, 80, 0.9);">💾 Скачать</button>
+            </div>
         </section>
 
-        <!-- ЭКРАН ВЫПОЛНЕНИЯ -->
         <section id="view-shop" class="view">
             <h2>В магазине</h2>
             
@@ -118,14 +121,14 @@
                 <p id="total-sum-text">Сумма: 0 ₽</p>
                 
                 <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom:20px;">
-                    <button id="share-active-plan-btn" class="share-active-btn" style="margin:0;">🔗 Поделиться планом</button>
-                    <button id="delete-active-plan-btn" class="delete-active-btn" style="margin:0;">🗑 Удалить этот план</button>
+                    <button id="share-active-plan-btn" class="share-active-btn" style="margin:0;">🔗 Поделиться</button>
+                    <button id="download-active-plan-btn" class="share-active-btn" style="margin:0; background: rgba(76, 175, 80, 0.9);">💾 Скачать</button>
+                    <button id="delete-active-plan-btn" class="delete-active-btn" style="margin:0;">🗑 Удалить</button>
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- Модальное окно -->
     <div id="plan-details-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -137,7 +140,10 @@
                 <ul id="modal-items-list" class="modal-items-list"></ul>
                 <div id="modal-plan-summary" class="modal-summary"></div>
                 <button id="modal-save-btn" class="main-btn" style="width:100%; margin-top:15px; font-size:15px;">Сохранить изменения</button>
-                <button id="modal-share-btn" class="share-active-btn" style="margin-top:10px; font-size:14px; padding:8px; width:100%; margin-bottom:0;">🔗 Поделиться этим планом</button>
+                <div style="display:flex; gap:8px; margin-top:10px;">
+                    <button id="modal-share-btn" class="share-active-btn" style="font-size:13px; padding:8px; flex:1; margin:0;">🔗 Поделиться</button>
+                    <button id="modal-download-btn" class="share-active-btn" style="font-size:13px; padding:8px; flex:1; margin:0; background: rgba(76, 175, 80, 0.9);">💾 Скачать</button>
+                </div>
             </div>
         </div>
     </div>
