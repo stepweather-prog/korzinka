@@ -72,6 +72,9 @@ const downloadPlanningBtn = document.getElementById('download-planning-btn');
 const importPlanBtn = document.getElementById('import-plan-btn');
 const importFileInput = document.getElementById('import-file-input');
 
+const updateAppBtn = document.getElementById('update-app-btn');
+const appVersionLabel = document.getElementById('app-version');
+
 let modalCurrentPlanId = null;
 
 // ===================== НАВИГАЦИЯ =====================
@@ -128,7 +131,7 @@ function escapeHtml(str) {
         .replace(/"/g, '&quot;');
 }
 
-// ===================== СЕРИАЛИЗАЦИЯ ДЛЯ ССЫЛКИ =====================
+// ===================== СЕРИАЛИЗАЦИЯ =====================
 function encodePlan(plan) {
     const payload = {
         n: plan.name,
@@ -177,7 +180,7 @@ function decodePlan(encoded) {
     }
 }
 
-// ===================== ПОДЕЛИТЬСЯ ССЫЛКОЙ =====================
+// ===================== ПОДЕЛИТЬСЯ =====================
 function sharePlan(plan) {
     if (!plan || !plan.items || plan.items.length === 0) {
         alert('Список пуст, нечем делиться');
@@ -208,7 +211,7 @@ function fallbackCopy(text) {
     }
 }
 
-// ===================== СКАЧАТЬ ПЛАН (JSON-ФАЙЛ) =====================
+// ===================== СКАЧИВАНИЕ =====================
 function downloadPlan(plan) {
     if (!plan || !plan.items || plan.items.length === 0) {
         alert('Список пуст, нечего скачивать');
@@ -245,7 +248,7 @@ function downloadPlan(plan) {
     URL.revokeObjectURL(url);
 }
 
-// ===================== ИМПОРТ ПЛАНА ИЗ ФАЙЛА =====================
+// ===================== ИМПОРТ ИЗ ФАЙЛА =====================
 function importPlanFromFile(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -533,11 +536,8 @@ window.toggleCheck = function(itemId) {
 
         const allChecked = activePlan.items.length > 0 && activePlan.items.every(i => i.checked);
         
-        const todayStr = new Date().toISOString().slice(0, 10);
-        const existingIdx = state.history.findIndex(h =>
-            h.originalPlanId === activePlan.id &&
-            h.completedAt && h.completedAt.slice(0, 10) === todayStr
-        );
+        // Ищем запись в истории именно для ЭТОГО activePlan (по его id)
+        const existingIdx = state.history.findIndex(h => h.id === activePlan.id);
 
         if (allChecked) {
             const historyEntry = {
@@ -683,7 +683,7 @@ function switchMenuTab(tab) {
     }
 }
 
-// ===================== ИМПОРТ КНОПКА =====================
+// ===================== ИМПОРТ =====================
 importPlanBtn.addEventListener('click', () => {
     importFileInput.value = '';
     importFileInput.click();
@@ -813,30 +813,33 @@ window.downloadSavedPlan = function(planId) {
     downloadPlan(plan);
 };
 
+// ===================== ВЫПОЛНИТЬ СНОВА =====================
 window.resumePlan = function(planId) {
     const plan = state.plans.find(p => p.id === planId);
     if (!plan) return;
 
-    const checkedCount = plan.items.filter(i => i.checked).length;
-    if (checkedCount > 0 && checkedCount < plan.items.length) {
-        if (!confirm('Этот план не доделан. Продолжить его или начать заново с нуля?')) {
-            plan.items.forEach(i => i.checked = false);
-        }
-    } else if (checkedCount === plan.items.length) {
-        if (confirm('Этот план уже выполнен. Начать заново?')) {
-            plan.items.forEach(i => i.checked = false);
-        } else {
-            return;
-        }
-    }
+    // Копируем товары плана в «Планирование» (в currentItems)
+    state.currentItems = plan.items.map(i => ({
+        id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+        name: i.name,
+        qty: i.qty,
+        unit: i.unit,
+        price: i.price,
+        checked: false,
+        selectedForDeletion: false
+    }));
 
-    state.activePlanId = plan.id;
+    // Сбрасываем активный план (чтобы не путать)
+    state.activePlanId = null;
     saveToLocalStorage();
-    
+    renderPlanningList();
+    renderShoppingList();
+
     exitSelectMode();
     sideMenu.classList.add('hidden');
-    renderShoppingList();
-    document.getElementById('tab-shop').click();
+
+    // Переключаемся на «Планирование»
+    document.getElementById('tab-plan').click();
 };
 
 // ===================== СТАТИСТИКА =====================
@@ -1055,6 +1058,94 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// ===================== ОБНОВЛЕНИЕ =====================
+let currentVersion = localStorage.getItem('korzinka_version') || null;
+
+if (appVersionLabel) {
+    appVersionLabel.textContent = currentVersion || 'dev';
+}
+
+async function checkLatestVersion() {
+    try {
+        const res = await fetch('sw.js?_=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) return null;
+        const text = await res.text();
+        const match = text.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
+        return match ? match[1] : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+if (updateAppBtn) {
+    updateAppBtn.addEventListener('click', async () => {
+        if (!('serviceWorker' in navigator)) {
+            alert('Service Worker не поддерживается. Обновите страницу вручную (Ctrl+F5).');
+            return;
+        }
+
+        updateAppBtn.textContent = '⏳ Проверяю...';
+        updateAppBtn.disabled = true;
+
+        const latest = await checkLatestVersion();
+        if (!latest) {
+            alert('Не удалось проверить новую версию (нет интернета?)');
+            updateAppBtn.textContent = '🔄 Обновить приложение';
+            updateAppBtn.disabled = false;
+            return;
+        }
+
+        if (latest === currentVersion) {
+            const force = confirm(
+                `У вас уже последняя версия (${currentVersion}).\n\n` +
+                `Всё равно переустановить кэш? Это может помочь, если что-то сломалось.`
+            );
+            if (!force) {
+                updateAppBtn.textContent = '🔄 Обновить приложение';
+                updateAppBtn.disabled = false;
+                return;
+            }
+        }
+
+        updateAppBtn.textContent = '⏳ Устанавливаю...';
+
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+            try { await reg.update(); } catch (e) {}
+            if (reg.waiting) {
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+        }
+
+        let reloaded = false;
+        const doReload = () => {
+            if (reloaded) return;
+            reloaded = true;
+            localStorage.setItem('korzinka_version', latest);
+            window.location.reload();
+        };
+
+        navigator.serviceWorker.addEventListener('controllerchange', doReload);
+        setTimeout(doReload, 4000);
+    });
+}
+
+(async function silentVersionCheck() {
+    if (!('serviceWorker' in navigator)) return;
+    const latest = await checkLatestVersion();
+    if (latest && currentVersion && latest !== currentVersion) {
+        if (updateAppBtn) {
+            updateAppBtn.style.background = '#f44336';
+            updateAppBtn.textContent = '🔄 Доступно обновление!';
+        }
+    }
+    if (latest && !currentVersion) {
+        currentVersion = latest;
+        localStorage.setItem('korzinka_version', latest);
+        if (appVersionLabel) appVersionLabel.textContent = latest;
+    }
+})();
+
 // ===================== ПАМЯТЬ =====================
 function saveToLocalStorage() {
     localStorage.setItem('korzinka_plans', JSON.stringify(state.plans));
@@ -1063,10 +1154,19 @@ function saveToLocalStorage() {
 }
 
 // ===================== СТАРТ =====================
-function init() {
+async function init() {
     checkImportFromUrl();
     renderPlanningList();
     renderShoppingList();
+
+    if (!localStorage.getItem('korzinka_version') && 'serviceWorker' in navigator) {
+        const latest = await checkLatestVersion();
+        if (latest) {
+            localStorage.setItem('korzinka_version', latest);
+            currentVersion = latest;
+            if (appVersionLabel) appVersionLabel.textContent = latest;
+        }
+    }
 }
 
 init();
