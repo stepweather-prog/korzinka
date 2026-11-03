@@ -87,15 +87,14 @@
                 <button id="add-btn">+</button>
             </div>
 
-            <!-- Панель массового удаления в планировании -->
             <div id="planning-controls" class="planning-controls hidden">
                 <button id="delete-selected-items-btn" class="small-btn danger">🗑 Удалить выбранные</button>
             </div>
 
-            <!-- Контейнер для страниц листиков (планирование) -->
             <div id="planning-pages"></div>
             
             <button id="start-shopping-btn" class="main-btn">Сохранить и Начать</button>
+            <button id="share-planning-btn" class="share-active-btn" style="margin-top:-10px;">🔗 Поделиться текущим списком</button>
         </section>
 
         <!-- ЭКРАН ВЫПОЛНЕНИЯ -->
@@ -117,12 +116,16 @@
                 </div>
                 <p id="progress-text">0 из 0 выполнено</p>
                 <p id="total-sum-text">Сумма: 0 ₽</p>
-                <button id="delete-active-plan-btn" class="delete-active-btn">🗑 Удалить этот план</button>
+                
+                <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom:20px;">
+                    <button id="share-active-plan-btn" class="share-active-btn" style="margin:0;">🔗 Поделиться планом</button>
+                    <button id="delete-active-plan-btn" class="delete-active-btn" style="margin:0;">🗑 Удалить этот план</button>
+                </div>
             </div>
         </section>
     </main>
 
-    <!-- Модальное окно деталей плана -->
+    <!-- Модальное окно -->
     <div id="plan-details-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -134,6 +137,7 @@
                 <ul id="modal-items-list" class="modal-items-list"></ul>
                 <div id="modal-plan-summary" class="modal-summary"></div>
                 <button id="modal-save-btn" class="main-btn" style="width:100%; margin-top:15px; font-size:15px;">Сохранить изменения</button>
+                <button id="modal-share-btn" class="share-active-btn" style="margin-top:10px; font-size:14px; padding:8px; width:100%; margin-bottom:0;">🔗 Поделиться этим планом</button>
             </div>
         </div>
     </div>
