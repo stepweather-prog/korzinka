@@ -458,3 +458,8 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     .item-qty-input { width: 40px; font-size: 11px; }
     .item-price-input { width: 55px; font-size: 11px; }
 }
+/* Кнопка импорта */
+#import-plan-btn {
+    background: #2196F3;
+    color: white;
+}
