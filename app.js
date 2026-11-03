@@ -36,6 +36,7 @@ const savedPlansList = document.getElementById('saved-plans-list');
 const noActivePlan = document.getElementById('no-active-plan');
 const activePlanContent = document.getElementById('active-plan-content');
 const deleteActivePlanBtn = document.getElementById('delete-active-plan-btn');
+const shareActivePlanBtn = document.getElementById('share-active-plan-btn');
 
 const menuTabPlans = document.getElementById('menu-tab-plans');
 const menuTabStats = document.getElementById('menu-tab-stats');
@@ -62,6 +63,8 @@ const modalItemsList = document.getElementById('modal-items-list');
 const modalSummary = document.getElementById('modal-plan-summary');
 const modalCloseBtn = document.getElementById('modal-close-btn');
 const modalSaveBtn = document.getElementById('modal-save-btn');
+const modalShareBtn = document.getElementById('modal-share-btn');
+const sharePlanningBtn = document.getElementById('share-planning-btn');
 
 let modalCurrentPlanId = null;
 
@@ -117,6 +120,125 @@ function escapeHtml(str) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+
+// ===================== СЕРИАЛИЗАЦИЯ ПЛАНА =====================
+function encodePlan(plan) {
+    const payload = {
+        n: plan.name,
+        d: plan.date,
+        c: plan.createdAt,
+        i: plan.items.map(it => ({
+            n: it.name,
+            q: it.qty,
+            u: it.unit,
+            p: it.price,
+            ch: it.checked
+        }))
+    };
+    const json = JSON.stringify(payload);
+    const bytes = new TextEncoder().encode(json);
+    let bin = '';
+    bytes.forEach(b => bin += String.fromCharCode(b));
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function decodePlan(encoded) {
+    try {
+        const b64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const json = new TextDecoder().decode(bytes);
+        const payload = JSON.parse(json);
+        return {
+            name: payload.n || 'Импортированный план',
+            date: payload.d || new Date().toLocaleString('ru-RU'),
+            createdAt: payload.c || new Date().toISOString(),
+            items: (payload.i || []).map(it => ({
+                id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+                name: it.n,
+                qty: it.q,
+                unit: it.u,
+                price: it.p,
+                checked: !!it.ch,
+                selectedForDeletion: false
+            }))
+        };
+    } catch (e) {
+        console.error('Ошибка импорта:', e);
+        return null;
+    }
+}
+
+function sharePlan(plan) {
+    if (!plan || !plan.items || plan.items.length === 0) {
+        alert('Список пуст, нечем делиться');
+        return;
+    }
+    const encoded = encodePlan(plan);
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}?import=${encoded}`;
+
+    if (navigator.share) {
+        navigator.share({
+            title: 'Корзинка — ' + plan.name,
+            text: 'Мой список покупок',
+            url: shareUrl
+        }).catch(() => fallbackCopy(shareUrl));
+    } else {
+        fallbackCopy(shareUrl);
+    }
+}
+
+function fallbackCopy(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Ссылка скопирована в буфер обмена. Отправь её на другое устройство.');
+        }).catch(() => prompt('Скопируйте ссылку вручную:', text));
+    } else {
+        prompt('Скопируйте ссылку вручную:', text);
+    }
+}
+
+function checkImportFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get('import');
+    if (!encoded) return;
+
+    const imported = decodePlan(encoded);
+    if (!imported) {
+        alert('Не удалось прочитать план из ссылки');
+        window.history.replaceState({}, '', window.location.pathname);
+        return;
+    }
+
+    const hashKey = 'korzinka_imported_' + encoded.slice(0, 16);
+    if (localStorage.getItem(hashKey)) {
+        window.history.replaceState({}, '', window.location.pathname);
+        return;
+    }
+    localStorage.setItem(hashKey, '1');
+
+    const newPlan = {
+        id: Date.now().toString(),
+        name: imported.name,
+        date: imported.date,
+        createdAt: imported.createdAt,
+        items: imported.items
+    };
+    state.plans.push(newPlan);
+    state.activePlanId = newPlan.id;
+    saveToLocalStorage();
+
+    window.history.replaceState({}, '', window.location.pathname);
+
+    renderSavedPlans();
+    renderShoppingList();
+    document.getElementById('tab-shop').click();
+    setTimeout(() => {
+        alert(`План «${newPlan.name}» добавлен на это устройство.`);
+    }, 300);
 }
 
 // ===================== ПЛАНИРОВАНИЕ =====================
@@ -239,6 +361,20 @@ startShoppingBtn.addEventListener('click', () => {
     renderPlanningList();
 });
 
+sharePlanningBtn.addEventListener('click', () => {
+    if (state.currentItems.length === 0) {
+        alert('Сначала добавьте продукты');
+        return;
+    }
+    const planToShare = {
+        name: `План от ${new Date().toLocaleDateString('ru-RU')}`,
+        date: new Date().toLocaleString('ru-RU'),
+        createdAt: new Date().toISOString(),
+        items: state.currentItems
+    };
+    sharePlan(planToShare);
+});
+
 // ===================== ВЫПОЛНЕНИЕ =====================
 function renderShoppingList() {
     const activePlan = state.plans.find(p => p.id === state.activePlanId);
@@ -293,7 +429,6 @@ window.toggleCheck = function(itemId) {
 
         const allChecked = activePlan.items.length > 0 && activePlan.items.every(i => i.checked);
         
-        // Ищем запись в истории за СЕГОДНЯ для этого же плана
         const todayStr = new Date().toISOString().slice(0, 10);
         const existingIdx = state.history.findIndex(h =>
             h.originalPlanId === activePlan.id &&
@@ -314,7 +449,6 @@ window.toggleCheck = function(itemId) {
                 state.history.push(historyEntry);
             }
         } else if (existingIdx >= 0) {
-            // Если снял галочку после полного выполнения — удаляем сегодняшнюю запись
             state.history.splice(existingIdx, 1);
         }
 
@@ -338,6 +472,15 @@ deleteActivePlanBtn.addEventListener('click', () => {
     state.activePlanId = null;
     saveToLocalStorage();
     renderShoppingList();
+});
+
+shareActivePlanBtn.addEventListener('click', () => {
+    const activePlan = state.plans.find(p => p.id === state.activePlanId);
+    if (!activePlan) {
+        alert('Нет активного плана');
+        return;
+    }
+    sharePlan(activePlan);
 });
 
 // ===================== РЕНДЕР СТРАНИЦ =====================
@@ -389,23 +532,6 @@ function renderPages(container, pages, mode) {
 
         textPanel.appendChild(ul);
         wrapper.appendChild(textPanel);
-
-        const pricesPanel = document.createElement('div');
-        pricesPanel.className = 'price-panel';
-        const pricesUl = document.createElement('ul');
-        pricesUl.className = 'prices-list';
-        pricesUl.id = `${mode}-prices-${pageIndex}`;
-
-        pageItems.forEach(item => {
-            const priceLi = document.createElement('li');
-            priceLi.textContent = item.price ? formatPrice(getItemTotal(item)) : '—';
-            if (item.checked) priceLi.classList.add('done');
-            pricesUl.appendChild(priceLi);
-        });
-
-        pricesPanel.appendChild(pricesUl);
-        wrapper.appendChild(pricesPanel);
-
         container.appendChild(wrapper);
     });
 }
@@ -537,12 +663,21 @@ function renderSavedPlans() {
                 <p>Куплено: ${checked} из ${total} (${percent}%)</p>
                 ${planTotal > 0 ? `<p class="plan-sum">${formatPrice(planSpent)} / ${formatPrice(planTotal)}</p>` : ''}
                 <div class="plan-progress"><div class="plan-progress-bar" style="width: ${percent}%"></div></div>
-                <button class="main-btn" style="margin-top: 10px; font-size: 14px; padding: 8px;" onclick="resumePlan('${plan.id}')">Выполнить снова</button>
+                <div style="display:flex; gap:5px; margin-top:10px; flex-wrap:wrap;">
+                    <button class="main-btn" style="font-size: 14px; padding: 8px; margin:0; flex:1; min-width:130px;" onclick="resumePlan('${plan.id}')">Выполнить снова</button>
+                    <button class="share-plan-small" onclick="shareSavedPlan('${plan.id}')">🔗 Поделиться</button>
+                </div>
             `;
         }
         savedPlansList.appendChild(li);
     });
 }
+
+window.shareSavedPlan = function(planId) {
+    const plan = state.plans.find(p => p.id === planId);
+    if (!plan) return;
+    sharePlan(plan);
+};
 
 window.resumePlan = function(planId) {
     const plan = state.plans.find(p => p.id === planId);
@@ -758,6 +893,14 @@ modalSaveBtn.addEventListener('click', () => {
     if (state.activePlanId === modalCurrentPlanId) renderShoppingList();
 });
 
+modalShareBtn.addEventListener('click', () => {
+    if (!modalCurrentPlanId) return;
+    const plan = state.plans.find(p => p.id === modalCurrentPlanId)
+             || state.history.find(p => p.id === modalCurrentPlanId);
+    if (!plan) return;
+    sharePlan(plan);
+});
+
 modal.addEventListener('click', (e) => {
     if (e.target === modal) {
         modal.classList.add('hidden');
@@ -779,6 +922,7 @@ function saveToLocalStorage() {
 
 // ===================== СТАРТ =====================
 function init() {
+    checkImportFromUrl();
     renderPlanningList();
     renderShoppingList();
 }
