@@ -25,10 +25,9 @@ header {
 #menu-btn:active { transform: scale(0.9); }
 #magnet-img { width: 60px; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
 
-/* Широкий основной контейнер */
 main {
     width: 100%;
-    max-width: 1000px; /* Очень широко */
+    max-width: 1000px;
     padding: 10px;
     display: flex;
     flex-direction: column;
@@ -64,7 +63,6 @@ main {
 
 h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6); }
 
-/* Форма добавления — широкая */
 .add-item-form {
     display: flex;
     width: 100%;
@@ -156,7 +154,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     line-height: 1;
 }
 
-/* Панель массового удаления */
 .planning-controls {
     display: flex;
     justify-content: center;
@@ -165,13 +162,13 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 }
 .planning-controls.hidden { display: none; }
 
-/* ===== ОДИН ШИРОКИЙ ЛИСТ ===== */
+/* ===== ЛИСТ ===== */
 .list-wrapper {
     position: relative;
     display: flex;
-    flex-direction: column; /* Теперь это одна колонка */
+    flex-direction: column;
     width: 100%;
-    max-width: 900px; /* Лист теперь тоже очень широкий */
+    max-width: 900px;
     min-height: 500px;
     margin: 0 auto 20px auto;
     padding: 0;
@@ -191,14 +188,13 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     opacity: 0.95;
 }
 
-/* Прозрачный слой для контента — на всю ширину */
 .text-panel {
     position: relative;
     z-index: 2;
     width: 100%;
     background: rgba(255, 255, 255, 0.70);
     border-radius: 10px;
-    padding: 80px 20px 20px 20px; /* 80px сверху от магнита */
+    padding: 80px 20px 20px 20px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -207,10 +203,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     overflow-y: auto;
 }
 
-/* Панель цен больше не нужна как отдельная колонка, прячем её */
-.price-panel {
-    display: none;
-}
+.price-panel { display: none; }
 
 .items-list {
     list-style: none;
@@ -220,7 +213,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     gap: 0;
 }
 
-/* Строка списка — теперь вмещает всё */
 .items-list > li {
     min-height: 44px;
     display: flex;
@@ -230,7 +222,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     gap: 8px;
 }
 
-/* Строка списка */
 .list-item {
     display: flex;
     align-items: center;
@@ -244,7 +235,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 
 .list-item.done { text-decoration: line-through; color: #888; }
 
-/* Название занимает всё свободное место */
 .item-name {
     flex: 1 1 auto;
     min-width: 0;
@@ -254,7 +244,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     color: #222;
 }
 
-/* Поля ввода */
 .item-qty-input {
     width: 60px;
     padding: 4px 6px;
@@ -284,7 +273,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     background: white;
 }
 
-/* Единицы */
 .item-qty {
     color: #555;
     font-size: 14px;
@@ -292,7 +280,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     flex-shrink: 0;
 }
 
-/* Текст цены в списке выполнения */
 .item-price-display {
     color: #2E7D32;
     font-weight: bold;
@@ -303,7 +290,6 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     text-align: right;
 }
 
-/* Кружки */
 .checkbox-img,
 .item-checkbox {
     width: 28px;
@@ -324,6 +310,31 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     cursor: pointer;
     box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     margin-bottom: 20px;
+}
+
+.share-active-btn {
+    background: rgba(33, 150, 243, 0.9);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    transition: background 0.2s;
+}
+
+.share-active-btn:hover { background: rgba(33, 150, 243, 1); }
+
+.share-plan-small {
+    background: rgba(33, 150, 243, 0.9);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 #progress-container {
@@ -356,10 +367,9 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     border-radius: 20px;
     font-size: 14px;
     cursor: pointer;
-    margin-bottom: 20px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
 }
 
-/* --- Дальше всё без изменений (меню, модалка и т.д.) --- */
 .empty-state {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     text-align: center; padding: 40px 20px; background: rgba(255, 255, 255, 0.9);
@@ -406,6 +416,7 @@ h2 { margin-bottom: 15px; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
 #close-menu-btn { width: 100%; padding: 10px; background: #ddd; border: none; border-radius: 10px; font-size: 16px; cursor: pointer; margin-top: 20px; }
 .hidden { display: none !important; }
 
+/* Модалка */
 .modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
 .modal-content { background: white; border-radius: 15px; width: 100%; max-width: 500px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; }
 .modal-header { display: flex; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid #eee; background: #f9f9f9; }
