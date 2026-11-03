@@ -291,16 +291,31 @@ window.toggleCheck = function(itemId) {
     if (item) {
         item.checked = !item.checked;
 
-        // Если ВСЁ отмечено — сохраняем в историю КАЖДЫЙ РАЗ (новое выполнение)
         const allChecked = activePlan.items.length > 0 && activePlan.items.every(i => i.checked);
+        
+        // Ищем запись в истории за СЕГОДНЯ для этого же плана
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const existingIdx = state.history.findIndex(h =>
+            h.originalPlanId === activePlan.id &&
+            h.completedAt && h.completedAt.slice(0, 10) === todayStr
+        );
+
         if (allChecked) {
-            const completionId = activePlan.id + '-' + Date.now(); // уникальный id
-            state.history.push({
+            const historyEntry = {
                 ...activePlan,
-                id: completionId, // новый id для записи в истории
-                originalPlanId: activePlan.id, // запоминаем, откуда пришло
+                id: existingIdx >= 0 ? state.history[existingIdx].id : (activePlan.id + '-' + Date.now()),
+                originalPlanId: activePlan.id,
                 completedAt: new Date().toISOString()
-            });
+            };
+
+            if (existingIdx >= 0) {
+                state.history[existingIdx] = historyEntry;
+            } else {
+                state.history.push(historyEntry);
+            }
+        } else if (existingIdx >= 0) {
+            // Если снял галочку после полного выполнения — удаляем сегодняшнюю запись
+            state.history.splice(existingIdx, 1);
         }
 
         saveToLocalStorage();
@@ -363,11 +378,11 @@ function renderPages(container, pages, mode) {
             } else {
                 const imgSrc = item.checked ? 'images/check_mark.png' : 'images/tick_a_box.png';
                 li.innerHTML = `
-    <img src="${imgSrc}" class="checkbox-img" onclick="toggleCheck('${item.id}')" alt="">
-    <span class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
-    <span class="item-qty">${getQtyLabel(item)}</span>
-    <span class="item-price-display">${item.price ? formatPrice(getItemTotal(item)) : '—'}</span>
-`;
+                    <img src="${imgSrc}" class="checkbox-img" onclick="toggleCheck('${item.id}')" alt="">
+                    <span class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
+                    <span class="item-qty">${getQtyLabel(item)}</span>
+                    <span class="item-price-display">${item.price ? formatPrice(getItemTotal(item)) : '—'}</span>
+                `;
             }
             ul.appendChild(li);
         });
@@ -727,26 +742,6 @@ window.updateModalPrice = function(itemId, value) {
     renderModalItems(plan);
     
     if (plan.id === state.activePlanId) renderShoppingList();
-    renderStats();
-    renderSavedPlans();
-};
-
-window.updateModalPrice = function(itemId, value) {
-    let plan = state.plans.find(p => p.id === modalCurrentPlanId);
-    if (!plan) plan = state.history.find(p => p.id === modalCurrentPlanId);
-    if (!plan) return;
-
-    const item = plan.items.find(i => i.id === itemId);
-    if (!item) return;
-
-    const price = parseFloat(value);
-    item.price = isNaN(price) || price < 0 ? null : price;
-    saveToLocalStorage();
-    renderModalItems(plan);
-    
-    if (plan.id === state.activePlanId) {
-        renderShoppingList();
-    }
     renderStats();
     renderSavedPlans();
 };
