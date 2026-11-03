@@ -1,4 +1,4 @@
-const CACHE_NAME = 'korzinka-v1';
+const CACHE_NAME = 'korzinka-v7';
 const ASSETS = [
   './',
   './index.html',
