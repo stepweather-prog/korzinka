@@ -71,7 +71,7 @@ const sharePlanningBtn = document.getElementById('share-planning-btn');
 const downloadPlanningBtn = document.getElementById('download-planning-btn');
 const importPlanBtn = document.getElementById('import-plan-btn');
 const importFileInput = document.getElementById('import-file-input');
-
+const exportAllBtn = document.getElementById('export-all-btn');
 const updateAppBtn = document.getElementById('update-app-btn');
 const appVersionLabel = document.getElementById('app-version');
 
@@ -248,49 +248,154 @@ function downloadPlan(plan) {
     URL.revokeObjectURL(url);
 }
 
+// ===================== ЭКСПОРТ ВСЕХ ПЛАНОВ =====================
+function exportAllPlans() {
+    if (state.plans.length === 0 && state.history.length === 0) {
+        alert('Нет данных для экспорта');
+        return;
+    }
+
+    const exportData = {
+        version: 1,
+        type: 'korzinka-full-backup',
+        exportedAt: new Date().toISOString(),
+        plans: state.plans.map(p => ({
+            name: p.name,
+            date: p.date,
+            createdAt: p.createdAt,
+            items: p.items.map(it => ({
+                name: it.name, qty: it.qty, unit: it.unit, price: it.price, checked: it.checked
+            }))
+        })),
+        history: state.history.map(p => ({
+            name: p.name,
+            date: p.date,
+            createdAt: p.createdAt,
+            completedAt: p.completedAt,
+            originalPlanId: p.originalPlanId,
+            items: p.items.map(it => ({
+                name: it.name, qty: it.qty, unit: it.unit, price: it.price, checked: it.checked
+            }))
+        }))
+    };
+
+    const json = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `korzinka-all-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
 // ===================== ИМПОРТ ИЗ ФАЙЛА =====================
 function importPlanFromFile(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
             const data = JSON.parse(e.target.result);
-            const rawPlan = data.plan || data;
 
-            if (!rawPlan.items || !Array.isArray(rawPlan.items)) {
-                alert('В файле нет корректного списка товаров');
-                return;
+            // Определяем тип файла
+            if (data.type === 'korzinka-full-backup' && (data.plans || data.history)) {
+                importFullBackup(data);
+            } else {
+                importSinglePlan(data.plan || data);
             }
-
-            const imported = {
-                id: Date.now().toString(),
-                name: rawPlan.name || 'Импортированный план',
-                date: rawPlan.date || new Date().toLocaleString('ru-RU'),
-                createdAt: rawPlan.createdAt || new Date().toISOString(),
-                items: rawPlan.items.map(it => ({
-                    id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
-                    name: it.name || it.n || 'Товар',
-                    qty: it.qty || it.q || 1,
-                    unit: it.unit || it.u || 'шт',
-                    price: (typeof it.price !== 'undefined' ? it.price : (typeof it.p !== 'undefined' ? it.p : null)),
-                    checked: !!(it.checked || it.ch),
-                    selectedForDeletion: false
-                }))
-            };
-
-            state.plans.push(imported);
-            state.activePlanId = imported.id;
-            saveToLocalStorage();
-
-            renderSavedPlans();
-            renderShoppingList();
-            document.getElementById('tab-shop').click();
-            alert(`План «${imported.name}» импортирован (${imported.items.length} позиций)`);
         } catch (err) {
             console.error(err);
             alert('Не удалось прочитать файл. Убедитесь, что это .json-файл из Корзинки.');
         }
     };
     reader.readAsText(file);
+}
+
+function importSinglePlan(rawPlan) {
+    if (!rawPlan.items || !Array.isArray(rawPlan.items)) {
+        alert('В файле нет корректного списка товаров');
+        return;
+    }
+
+    const imported = {
+        id: Date.now().toString(),
+        name: rawPlan.name || 'Импортированный план',
+        date: rawPlan.date || new Date().toLocaleString('ru-RU'),
+        createdAt: rawPlan.createdAt || new Date().toISOString(),
+        items: rawPlan.items.map(it => ({
+            id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+            name: it.name || it.n || 'Товар',
+            qty: it.qty || it.q || 1,
+            unit: it.unit || it.u || 'шт',
+            price: (typeof it.price !== 'undefined' ? it.price : (typeof it.p !== 'undefined' ? it.p : null)),
+            checked: !!(it.checked || it.ch),
+            selectedForDeletion: false
+        }))
+    };
+
+    state.plans.push(imported);
+    state.activePlanId = imported.id;
+    saveToLocalStorage();
+
+    renderSavedPlans();
+    renderShoppingList();
+    document.getElementById('tab-shop').click();
+    alert(`План «${imported.name}» импортирован (${imported.items.length} позиций)`);
+}
+
+function importFullBackup(data) {
+    const plans = data.plans || [];
+    const history = data.history || [];
+
+    if (plans.length === 0 && history.length === 0) {
+        alert('В файле нет данных для импорта');
+        return;
+    }
+
+    const hasExisting = state.plans.length > 0 || state.history.length > 0;
+    const replace = hasExisting
+        ? confirm(
+            `Найдено: ${plans.length} планов и ${history.length} записей истории.\n\n` +
+            `ОК = добавить к существующим (объединить).\n` +
+            `Отмена = заменить всё текущее.`
+        )
+        : true;
+
+    const mapPlan = (p, isHistory) => ({
+        id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+        name: p.name,
+        date: p.date,
+        createdAt: p.createdAt,
+        completedAt: isHistory ? p.completedAt : undefined,
+        originalPlanId: isHistory ? p.originalPlanId : undefined,
+        items: (p.items || []).map(it => ({
+            id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+            name: it.name,
+            qty: it.qty,
+            unit: it.unit,
+            price: it.price,
+            checked: !!it.checked,
+            selectedForDeletion: false
+        }))
+    });
+
+    const newPlans = plans.map(p => mapPlan(p, false));
+    const newHistory = history.map(p => mapPlan(p, true));
+
+    if (replace) {
+        state.plans = newPlans;
+        state.history = newHistory;
+        state.activePlanId = null;
+    } else {
+        state.plans = state.plans.concat(newPlans.map(p => ({ ...p, name: p.name + ' (импорт)' })));
+        state.history = state.history.concat(newHistory);
+    }
+
+    saveToLocalStorage();
+    renderSavedPlans();
+    renderStats();
+    renderShoppingList();
+    alert(`Импортировано: ${plans.length} планов, ${history.length} записей истории.`);
 }
 
 // ===================== ИМПОРТ ИЗ URL =====================
@@ -694,7 +799,7 @@ importFileInput.addEventListener('change', (e) => {
     if (!file) return;
     importPlanFromFile(file);
 });
-
+exportAllBtn.addEventListener('click', exportAllPlans);
 // ===================== РЕЖИМ ВЫБОРА ПЛАНОВ =====================
 selectModeBtn.addEventListener('click', enterSelectMode);
 cancelSelectBtn.addEventListener('click', exitSelectMode);
