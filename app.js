@@ -74,7 +74,14 @@ const importFileInput = document.getElementById('import-file-input');
 const exportAllBtn = document.getElementById('export-all-btn');
 const updateAppBtn = document.getElementById('update-app-btn');
 const appVersionLabel = document.getElementById('app-version');
-
+const limitDisplay = document.getElementById('limit-display');
+const limitProgressBar = document.getElementById('limit-progress-bar');
+const limitStatusText = document.getElementById('limit-status-text');
+const editLimitBtn = document.getElementById('edit-limit-btn');
+const limitEditForm = document.getElementById('limit-edit-form');
+const limitInput = document.getElementById('limit-input');
+const limitSaveBtn = document.getElementById('limit-save-btn');
+const limitCancelBtn = document.getElementById('limit-cancel-btn');
 let modalCurrentPlanId = null;
 
 // ===================== НАВИГАЦИЯ =====================
@@ -950,11 +957,13 @@ window.resumePlan = function(planId) {
 // ===================== СТАТИСТИКА =====================
 prevMonthBtn.addEventListener('click', () => {
     state.statsMonth.setMonth(state.statsMonth.getMonth() - 1);
+    limitEditForm.classList.add('hidden');
     renderStats();
 });
 
 nextMonthBtn.addEventListener('click', () => {
     state.statsMonth.setMonth(state.statsMonth.getMonth() + 1);
+    limitEditForm.classList.add('hidden');
     renderStats();
 });
 
@@ -1031,6 +1040,91 @@ function renderStats() {
     });
 }
 
+// ===== ЛОГИКА ЛИМИТА =====
+function getLimitKey(year, month) {
+    return `korzinka_limit_${year}_${month}`;
+}
+
+function getLimit(year, month) {
+    const raw = localStorage.getItem(getLimitKey(year, month));
+    return raw ? parseFloat(raw) : null;
+}
+
+function setLimit(year, month, value) {
+    if (value === null || isNaN(value)) {
+        localStorage.removeItem(getLimitKey(year, month));
+    } else {
+        localStorage.setItem(getLimitKey(year, month), value.toString());
+    }
+}
+
+function renderLimit(year, month, totalSum) {
+    const limit = getLimit(year, month);
+
+    if (!limit || limit <= 0) {
+        limitDisplay.textContent = 'Не задан';
+        limitProgressBar.style.width = '0%';
+        limitProgressBar.className = 'limit-progress-bar';
+        limitStatusText.textContent = 'Установите лимит, чтобы видеть расход';
+        limitStatusText.className = 'limit-status-text';
+        return;
+    }
+
+    const percent = Math.round((totalSum / limit) * 100);
+    const remaining = limit - totalSum;
+
+    limitDisplay.textContent = formatPrice(limit);
+    limitProgressBar.style.width = Math.min(percent, 100) + '%';
+    limitProgressBar.className = 'limit-progress-bar';
+
+    if (percent >= 100) {
+        limitProgressBar.classList.add('danger');
+    } else if (percent >= 80) {
+        limitProgressBar.classList.add('warning');
+    }
+
+    if (remaining >= 0) {
+        limitStatusText.textContent = `Осталось: ${formatPrice(remaining)} (${percent}% использовано)`;
+        limitStatusText.className = 'limit-status-text';
+    } else {
+        limitStatusText.textContent = `Превышено на ${formatPrice(Math.abs(remaining))} (${percent}%)`;
+        limitStatusText.className = 'limit-status-text limit-over';
+    }
+}
+
+// ===== КНОПКИ РЕДАКТИРОВАНИЯ ЛИМИТА =====
+editLimitBtn.addEventListener('click', () => {
+    const year = state.statsMonth.getFullYear();
+    const month = state.statsMonth.getMonth();
+    const current = getLimit(year, month);
+
+    limitInput.value = current ? current : '';
+    limitEditForm.classList.remove('hidden');
+    limitInput.focus();
+});
+
+limitCancelBtn.addEventListener('click', () => {
+    limitEditForm.classList.add('hidden');
+});
+
+limitSaveBtn.addEventListener('click', () => {
+    const year = state.statsMonth.getFullYear();
+    const month = state.statsMonth.getMonth();
+    const val = parseFloat(limitInput.value);
+
+    if (isNaN(val) || val < 0) {
+        alert('Введите корректное число (0 или больше)');
+        return;
+    }
+
+    setLimit(year, month, val);
+    limitEditForm.classList.add('hidden');
+    renderStats();
+});
+
+limitInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') limitSaveBtn.click();
+});
 window.deletePlanFromStats = function(planId, event) {
     event.stopPropagation();
     if (!confirm('Удалить этот план из статистики?')) return;
