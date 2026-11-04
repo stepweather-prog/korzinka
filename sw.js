@@ -1,4 +1,4 @@
-const CACHE_NAME = 'korzinka-v1.4'; // ← при каждом обновлении файлов поднимай версию
+const CACHE_NAME = 'korzinka-1.3';
 const ASSETS = [
     './',
     './index.html',
@@ -13,15 +13,14 @@ const ASSETS = [
     './images/happy_smiley_magnit.png'
 ];
 
-// Установка: кэшируем всё + сразу активируемся (не ждём закрытия вкладок)
 self.addEventListener('install', (e) => {
     e.waitUntil(
-        caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+        caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(ASSETS))
             .then(() => self.skipWaiting())
     );
 });
 
-// Активация: удаляем старые кэши, чтобы место не копилось
 self.addEventListener('activate', (e) => {
     e.waitUntil(
         caches.keys().then(keys =>
@@ -32,34 +31,29 @@ self.addEventListener('activate', (e) => {
     );
 });
 
-// Fetch: сеть в приоритете, кэш — как fallback
 self.addEventListener('fetch', (e) => {
     e.respondWith(
-        fetch(e.request).then(response => {
-            // Кэшируем только успешные GET-запросы
-            if (e.request.method === 'GET' && response.status === 200) {
-                const copy = response.clone();
-                caches.open(CACHE_NAME).then(cache => cache.put(e.request, copy));
-            }
-            return response;
-        }).catch(() => caches.match(e.request))
+        fetch(e.request)
+            .then(response => {
+                if (e.request.method === 'GET' && response.status === 200) {
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(e.request, copy));
+                }
+                return response;
+            })
+            .catch(() => caches.match(e.request).then(r => r || new Response('Offline', { status: 503, statusText: 'Offline' })))
     );
 });
 
-// Сообщения из основного окна
 self.addEventListener('message', async (e) => {
     if (!e.data) return;
-
     if (e.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
     }
-
     if (e.data.type === 'CLEAR_CACHES') {
         const keys = await caches.keys();
         await Promise.all(keys.map(k => caches.delete(k)));
         self.skipWaiting();
-        if (e.source) {
-            e.source.postMessage({ type: 'CACHES_CLEARED' });
-        }
+        if (e.source) e.source.postMessage({ type: 'CACHES_CLEARED' });
     }
 });
