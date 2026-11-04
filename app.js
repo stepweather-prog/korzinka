@@ -74,6 +74,8 @@ const importFileInput = document.getElementById('import-file-input');
 const exportAllBtn = document.getElementById('export-all-btn');
 const updateAppBtn = document.getElementById('update-app-btn');
 const appVersionLabel = document.getElementById('app-version');
+
+// Лимит
 const limitDisplay = document.getElementById('limit-display');
 const limitProgressBar = document.getElementById('limit-progress-bar');
 const limitStatusText = document.getElementById('limit-status-text');
@@ -82,6 +84,7 @@ const limitEditForm = document.getElementById('limit-edit-form');
 const limitInput = document.getElementById('limit-input');
 const limitSaveBtn = document.getElementById('limit-save-btn');
 const limitCancelBtn = document.getElementById('limit-cancel-btn');
+
 let modalCurrentPlanId = null;
 
 // ===================== НАВИГАЦИЯ =====================
@@ -297,6 +300,7 @@ function exportAllPlans() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
+
 // ===================== ИМПОРТ ИЗ ФАЙЛА =====================
 function importPlanFromFile(file) {
     const reader = new FileReader();
@@ -304,7 +308,6 @@ function importPlanFromFile(file) {
         try {
             const data = JSON.parse(e.target.result);
 
-            // Определяем тип файла
             if (data.type === 'korzinka-full-backup' && (data.plans || data.history)) {
                 importFullBackup(data);
             } else {
@@ -648,7 +651,6 @@ window.toggleCheck = function(itemId) {
 
         const allChecked = activePlan.items.length > 0 && activePlan.items.every(i => i.checked);
         
-        // Ищем запись в истории именно для ЭТОГО activePlan (по его id)
         const existingIdx = state.history.findIndex(h => h.id === activePlan.id);
 
         if (allChecked) {
@@ -807,6 +809,7 @@ importFileInput.addEventListener('change', (e) => {
     importPlanFromFile(file);
 });
 exportAllBtn.addEventListener('click', exportAllPlans);
+
 // ===================== РЕЖИМ ВЫБОРА ПЛАНОВ =====================
 selectModeBtn.addEventListener('click', enterSelectMode);
 cancelSelectBtn.addEventListener('click', exitSelectMode);
@@ -930,7 +933,6 @@ window.resumePlan = function(planId) {
     const plan = state.plans.find(p => p.id === planId);
     if (!plan) return;
 
-    // Копируем товары плана в «Планирование» (в currentItems)
     state.currentItems = plan.items.map(i => ({
         id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
         name: i.name,
@@ -941,7 +943,6 @@ window.resumePlan = function(planId) {
         selectedForDeletion: false
     }));
 
-    // Сбрасываем активный план (чтобы не путать)
     state.activePlanId = null;
     saveToLocalStorage();
     renderPlanningList();
@@ -950,7 +951,6 @@ window.resumePlan = function(planId) {
     exitSelectMode();
     sideMenu.classList.add('hidden');
 
-    // Переключаемся на «Планирование»
     document.getElementById('tab-plan').click();
 };
 
@@ -1011,6 +1011,9 @@ function renderStats() {
 
     statsTotalSum.textContent = formatPrice(totalSum) || '0 ₽';
     statsPlansCount.textContent = `${monthPlans.length} ${pluralize(monthPlans.length, 'план', 'плана', 'планов')}`;
+
+    // === ЛИМИТ: обновляем отображение ===
+    renderLimit(year, month, totalSum);
 
     statsPlansList.innerHTML = '';
     
@@ -1125,6 +1128,7 @@ limitSaveBtn.addEventListener('click', () => {
 limitInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') limitSaveBtn.click();
 });
+
 window.deletePlanFromStats = function(planId, event) {
     event.stopPropagation();
     if (!confirm('Удалить этот план из статистики?')) return;
@@ -1308,7 +1312,6 @@ if (updateAppBtn) {
             return;
         }
 
-        // Всегда сохраняем последнюю версию
         localStorage.setItem('korzinka_version', latest);
 
         updateAppBtn.textContent = '⏳ Обновляю...';
@@ -1329,12 +1332,10 @@ if (updateAppBtn) {
                 }
             }
 
-            // Принудительно чистим все кэши
             await clearAllCaches();
 
             await new Promise(r => setTimeout(r, 300));
 
-            // Перезагружаем с обходом кэша браузера
             const url = new URL(window.location.href);
             url.searchParams.set('_v', Date.now());
             window.location.href = url.toString();
@@ -1363,7 +1364,6 @@ if (updateAppBtn) {
     }
 })();
 
-// Очищаем ?_v= из URL после перезагрузки
 (function cleanUrlParam() {
     const url = new URL(window.location.href);
     if (url.searchParams.has('_v')) {
@@ -1371,6 +1371,7 @@ if (updateAppBtn) {
         window.history.replaceState({}, '', url.toString());
     }
 })();
+
 // ===================== ПАМЯТЬ =====================
 function saveToLocalStorage() {
     localStorage.setItem('korzinka_plans', JSON.stringify(state.plans));
