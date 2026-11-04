@@ -51,6 +51,24 @@
                 <span id="current-month-label">Месяц</span>
                 <button id="next-month-btn">▶</button>
             </div>
+            <div class="limit-block">
+    <div class="limit-header">
+        <span>Лимит на месяц:</span>
+        <span id="limit-display" class="limit-value">—</span>
+    </div>
+    <div class="limit-progress-container">
+        <div id="limit-progress-bar" class="limit-progress-bar"></div>
+    </div>
+    <div class="limit-footer">
+        <span id="limit-status-text">Не задан</span>
+        <button id="edit-limit-btn" class="limit-edit-btn">✎ Изменить</button>
+    </div>
+    <div id="limit-edit-form" class="limit-edit-form hidden">
+        <input type="number" id="limit-input" placeholder="Например, 30000" min="0" step="100">
+        <button id="limit-save-btn" class="small-btn" style="background:#4CAF50; color:white;">Сохранить</button>
+        <button id="limit-cancel-btn" class="small-btn cancel">Отмена</button>
+    </div>
+</div>
             <div class="stats-summary">
                 <p>Потрачено:</p>
                 <h3 id="stats-total-sum">0 ₽</h3>
