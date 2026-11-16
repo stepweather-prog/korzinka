@@ -39,6 +39,7 @@ const addBtn = document.getElementById('add-btn');
 const planningPagesContainer = document.getElementById('planning-pages');
 const shoppingPagesContainer = document.getElementById('shopping-pages');
 
+const savePlanBtn = document.getElementById('save-plan-btn');
 const startShoppingBtn = document.getElementById('start-shopping-btn');
 const progressBar = document.getElementById('progress-bar');
 const progressText = document.getElementById('progress-text');
@@ -581,6 +582,34 @@ document.getElementById('delete-selected-items-btn').addEventListener('click', (
     renderPlanningList();
 });
 
+// ===== СОХРАНИТЬ (без запуска) =====
+savePlanBtn.addEventListener('click', () => {
+    if (state.currentItems.length === 0) {
+        alert('Сначала добавьте продукты!');
+        return;
+    }
+
+    const itemsToSave = state.currentItems.map(i => ({ ...i, selectedForDeletion: false }));
+
+    const newPlan = {
+        id: Date.now().toString(),
+        name: `План от ${new Date().toLocaleDateString('ru-RU')}`,
+        items: itemsToSave,
+        date: new Date().toLocaleString('ru-RU'),
+        createdAt: new Date().toISOString()
+    };
+
+    state.plans.push(newPlan);
+    saveToLocalStorage();
+
+    state.currentItems = [];
+    renderPlanningList();
+    renderSavedPlans();
+
+    alert(`План «${newPlan.name}» сохранён. Открой меню → Планы → «▶ Выполнить», чтобы начать.`);
+});
+
+// ===== НАЧАТЬ ПОКУПКИ (сохранить + сразу открыть в «Выполнении») =====
 startShoppingBtn.addEventListener('click', () => {
     if (state.currentItems.length === 0) {
         alert('Сначала добавьте продукты!');
@@ -983,7 +1012,7 @@ function renderSavedPlans() {
                 ${planTotal > 0 ? `<p class="plan-sum">${formatPrice(planSpent)} / ${formatPrice(planTotal)}</p>` : ''}
                 <div class="plan-progress"><div class="plan-progress-bar" style="width: ${percent}%"></div></div>
                 <div style="display:flex; gap:5px; margin-top:10px; flex-wrap:wrap;">
-                    <button class="main-btn" style="font-size: 14px; padding: 8px; margin:0; flex:1; min-width:130px;" onclick="resumePlan('${plan.id}')">Выполнить снова</button>
+                    <button class="main-btn" style="font-size: 14px; padding: 8px; margin:0; flex:1; min-width:130px; background:#4CAF50;" onclick="startSavedPlan('${plan.id}')">▶ Выполнить</button>
                     <button class="share-plan-small" onclick="shareSavedPlan('${plan.id}')">🔗</button>
                     <button class="share-plan-small" style="background: rgba(76, 175, 80, 0.9);" onclick="downloadSavedPlan('${plan.id}')">💾</button>
                 </div>
@@ -1005,7 +1034,22 @@ window.downloadSavedPlan = function(planId) {
     downloadPlan(plan);
 };
 
-// ===================== ВЫПОЛНИТЬ СНОВА =====================
+// ===================== ЗАПУСК СОХРАНЁННОГО ПЛАНА =====================
+window.startSavedPlan = function(planId) {
+    const plan = state.plans.find(p => p.id === planId);
+    if (!plan) return;
+
+    state.activePlanId = plan.id;
+    saveToLocalStorage();
+
+    renderShoppingList();
+    exitSelectMode();
+    sideMenu.classList.add('hidden');
+
+    document.getElementById('tab-shop').click();
+};
+
+// ===================== ВЫПОЛНИТЬ СНОВА (пересоздать список) =====================
 window.resumePlan = function(planId) {
     const plan = state.plans.find(p => p.id === planId);
     if (!plan) return;
