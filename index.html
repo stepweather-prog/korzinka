@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Корзинка</title>
-    
+
     <link rel="icon" type="image/png" href="images/icon.png">
     <link rel="shortcut icon" type="image/png" href="images/icon.png">
     <link rel="manifest" href="manifest.json">
@@ -24,25 +24,48 @@
             <img src="images/icon.png" alt="Корзинка" class="app-icon">
             <h2>Корзинка</h2>
         </div>
-        
+
         <div class="menu-tabs">
             <button id="menu-tab-plans" class="menu-tab active">Планы</button>
             <button id="menu-tab-stats" class="menu-tab">Статистика</button>
         </div>
 
         <div id="plans-controls">
-    <button id="select-mode-btn" class="small-btn">☑ Выбрать</button>
-    <button id="import-plan-btn" class="small-btn" style="background:#2196F3; color:white;">📥 Импорт</button>
-    <button id="export-all-btn" class="small-btn" style="background:#4CAF50; color:white;">📦 Экспорт</button>
-    <input type="file" id="import-file-input" accept=".json,application/json" style="display:none;">
-    <div id="select-mode-actions" class="hidden">
-        <button id="cancel-select-btn" class="small-btn cancel">Отмена</button>
-        <button id="delete-selected-btn" class="small-btn danger">Удалить выбранные</button>
-    </div>
-</div>
+            <button id="select-mode-btn" class="small-btn">☑ Выбрать</button>
+            <button id="import-plan-btn" class="small-btn" style="background:#2196F3; color:white;">📥 Импорт</button>
+            <button id="export-all-btn" class="small-btn" style="background:#4CAF50; color:white;">📦 Экспорт</button>
+            <input type="file" id="import-file-input" accept=".json,application/json" style="display:none;">
+            <div id="select-mode-actions" class="hidden">
+                <button id="cancel-select-btn" class="small-btn cancel">Отмена</button>
+                <button id="delete-selected-btn" class="small-btn danger">Удалить выбранные</button>
+            </div>
+        </div>
 
         <div id="menu-plans-view">
             <ul id="saved-plans-list"></ul>
+
+            <!-- ===== БЭКАП В ПАПКУ (локально) ===== -->
+            <div class="backup-block">
+                <h4 class="backup-title">💾 Бэкап в папку (локально)</h4>
+
+                <label class="backup-label">
+                    Периодичность:
+                    <select id="backup-interval">
+                        <option value="off">Выключено</option>
+                        <option value="weekly">Раз в неделю</option>
+                        <option value="monthly">Раз в месяц</option>
+                    </select>
+                </label>
+
+                <div class="backup-actions">
+                    <button id="backup-save-now-btn" class="small-btn" style="background:#4CAF50; color:white;">💾 Сохранить бэкап</button>
+                    <button id="backup-restore-btn" class="small-btn cancel">📥 Восстановить из файла</button>
+                    <input type="file" id="backup-restore-input" accept=".json" hidden>
+                </div>
+
+                <p id="backup-status" class="backup-status">Папка для бэкапов не выбрана. Она спросится при первом сохранении.</p>
+                <p class="backup-hint">Файлы хранятся только на этом устройстве. Один файл на день, старые не удаляются.</p>
+            </div>
         </div>
 
         <div id="menu-stats-view" class="hidden">
@@ -51,33 +74,50 @@
                 <span id="current-month-label">Месяц</span>
                 <button id="next-month-btn">▶</button>
             </div>
+
             <div class="limit-block">
-    <div class="limit-header">
-        <span>Лимит на месяц:</span>
-        <span id="limit-display" class="limit-value">—</span>
-    </div>
-    <div class="limit-progress-container">
-        <div id="limit-progress-bar" class="limit-progress-bar"></div>
-    </div>
-    <div class="limit-footer">
-        <span id="limit-status-text">Не задан</span>
-        <button id="edit-limit-btn" class="limit-edit-btn">✎ Изменить</button>
-    </div>
-    <div id="limit-edit-form" class="limit-edit-form hidden">
-        <input type="number" id="limit-input" placeholder="Например, 30000" min="0" step="100">
-        <button id="limit-save-btn" class="small-btn" style="background:#4CAF50; color:white;">Сохранить</button>
-        <button id="limit-cancel-btn" class="small-btn cancel">Отмена</button>
-    </div>
-</div>
+                <div class="limit-header">
+                    <span>Лимит на месяц:</span>
+                    <span id="limit-display" class="limit-value">—</span>
+                </div>
+                <div class="limit-progress-container">
+                    <div id="limit-progress-bar" class="limit-progress-bar"></div>
+                </div>
+                <div class="limit-footer">
+                    <span id="limit-status-text">Не задан</span>
+                    <button id="edit-limit-btn" class="limit-edit-btn">✎ Изменить</button>
+                </div>
+                <div id="limit-edit-form" class="limit-edit-form hidden">
+                    <input type="number" id="limit-input" placeholder="Например, 30000" min="0" step="100">
+                    <button id="limit-save-btn" class="small-btn" style="background:#4CAF50; color:white;">Сохранить</button>
+                    <button id="limit-cancel-btn" class="small-btn cancel">Отмена</button>
+                </div>
+            </div>
+
             <div class="stats-summary">
                 <p>Потрачено:</p>
                 <h3 id="stats-total-sum">0 ₽</h3>
                 <p id="stats-plans-count">0 планов</p>
             </div>
+
+            <!-- ===== КРУГОВАЯ ДИАГРАММА ===== -->
+            <div class="category-chart-block">
+                <h3 class="chart-title">Расходы по категориям</h3>
+                <div class="chart-container">
+                    <svg id="category-chart" viewBox="0 0 200 200" class="donut-chart"></svg>
+                    <div class="chart-center">
+                        <span id="chart-total">0 ₽</span>
+                        <small>всего</small>
+                    </div>
+                </div>
+                <ul id="category-legend" class="category-legend"></ul>
+            </div>
+
             <button id="clear-stats-btn" class="small-btn danger" style="width:100%; margin-bottom:10px;">🗑 Очистить статистику за месяц</button>
             <ul id="stats-plans-list"></ul>
         </div>
-<button id="update-app-btn" class="small-btn" style="width:100%; margin-top:15px; background:#FF9800; color:white;">🔄 Обновить приложение</button>
+
+        <button id="update-app-btn" class="small-btn" style="width:100%; margin-top:15px; background:#FF9800; color:white;">🔄 Обновить приложение</button>
         <p style="text-align:center; font-size:11px; color:#999; margin-top:8px;">Версия: <span id="app-version">—</span></p>
         <button id="close-menu-btn">Закрыть</button>
     </aside>
@@ -90,7 +130,7 @@
 
         <section id="view-plan" class="view active">
             <h2 id="plan-title">Новый список</h2>
-            
+
             <div class="add-item-form">
                 <input type="text" id="new-item-input" placeholder="Что купить?">
                 <div class="qty-group">
@@ -105,6 +145,19 @@
                     </select>
                 </div>
                 <input type="number" id="new-price-input" placeholder="₽/ед" min="0" step="0.01">
+                <select id="new-category-select" class="category-select">
+                    <option value="products">🥗 Продукты</option>
+                    <option value="household">🧴 Бытовая химия</option>
+                    <option value="clothes">👕 Одежда</option>
+                    <option value="electronics">🔌 Электроника</option>
+                    <option value="household-needs">🧹 Хоз. нужды</option>
+                    <option value="services">🛠 Услуги</option>
+                    <option value="utilities">💡 ЖКХ</option>
+                    <option value="debts">💳 Долги / кредиты</option>
+                    <option value="transport">🚌 Транспорт</option>
+                    <option value="gifts">🎁 Подарки</option>
+                    <option value="other">📦 Прочие расходы</option>
+                </select>
                 <button id="add-btn">+</button>
             </div>
 
@@ -113,7 +166,7 @@
             </div>
 
             <div id="planning-pages"></div>
-            
+
             <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom:20px;">
                 <button id="start-shopping-btn" class="main-btn" style="margin:0;">Сохранить и Начать</button>
                 <button id="share-planning-btn" class="share-active-btn" style="margin:0;">🔗 Поделиться</button>
@@ -123,7 +176,7 @@
 
         <section id="view-shop" class="view">
             <h2>В магазине</h2>
-            
+
             <div id="no-active-plan" class="empty-state">
                 <img src="images/icon.png" alt="Корзинка" class="empty-icon">
                 <p>Нет активного плана</p>
@@ -139,7 +192,14 @@
                 </div>
                 <p id="progress-text">0 из 0 выполнено</p>
                 <p id="total-sum-text">Сумма: 0 ₽</p>
-                
+
+                <!-- Плашка «План выполнен» -->
+                <div id="plan-completed-banner" class="plan-completed-banner hidden">
+                    <div class="banner-emoji">✅</div>
+                    <div class="banner-text">План выполнен!</div>
+                    <div class="banner-sub">Возвращаемся к планированию…</div>
+                </div>
+
                 <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom:20px;">
                     <button id="share-active-plan-btn" class="share-active-btn" style="margin:0;">🔗 Поделиться</button>
                     <button id="download-active-plan-btn" class="share-active-btn" style="margin:0; background: rgba(76, 175, 80, 0.9);">💾 Скачать</button>
