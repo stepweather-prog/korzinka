@@ -1,4 +1,4 @@
-const CACHE_NAME = 'korzinka-1.4';
+const CACHE_NAME = 'korzinka-1.5'; 
 const ASSETS = [
     './',
     './index.html',
@@ -32,18 +32,45 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+    const req = e.request;
+
+    // Кэшируем только GET и только свой домен
+    if (req.method !== 'GET') return;
+    if (!req.url.startsWith(self.location.origin)) return;
+
+    // sw.js не кэшируем — нужен свежий для проверки версии
+    if (req.url.includes('/sw.js')) {
+        e.respondWith(fetch(req).catch(() => caches.match(req)));
+        return;
+    }
+
+    // Стратегия: кэш → сеть → кэш (обновление в фоне)
     e.respondWith(
-        fetch(e.request)
-            .then(response => {
-                if (e.request.method === 'GET' && response.status === 200) {
-                    const copy = response.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put(e.request, copy));
-                }
-                return response;
-            })
-            .catch(() => caches.match(e.request).then(r => r || new Response('Offline', { status: 503, statusText: 'Offline' })))
+        caches.match(req).then(cached => {
+            const networkFetch = fetch(req)
+                .then(response => {
+                    if (response && response.status === 200 && response.type === 'basic') {
+                        const copy = response.clone();
+                        caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
+                    }
+                    return response;
+                })
+                .catch(() => cached || offlineFallback(req));
+
+            return cached || networkFetch;
+        })
     );
 });
+
+function offlineFallback(req) {
+    if (req.mode === 'navigate') {
+        return caches.match('./index.html').then(r => r || new Response(
+            '<h1>Офлайн</h1><p>Нет сети, и index.html не в кэше.</p>',
+            { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        ));
+    }
+    return new Response('Offline', { status: 503, statusText: 'Offline' });
+}
 
 self.addEventListener('message', async (e) => {
     if (!e.data) return;
