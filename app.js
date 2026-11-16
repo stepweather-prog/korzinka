@@ -11,6 +11,21 @@ let state = {
 
 const ITEMS_PER_PAGE = 10;
 
+// ===================== КАТЕГОРИИ =====================
+const CATEGORIES = {
+    products:         { label: 'Продукты',        color: '#4CAF50', emoji: '🥗' },
+    household:        { label: 'Бытовая химия',   color: '#2196F3', emoji: '🧴' },
+    clothes:          { label: 'Одежда',          color: '#9C27B0', emoji: '👕' },
+    electronics:      { label: 'Электроника',     color: '#FF9800', emoji: '🔌' },
+    'household-needs':{ label: 'Хоз. нужды',      color: '#795548', emoji: '🧹' },
+    services:         { label: 'Услуги',          color: '#00BCD4', emoji: '🛠' },
+    utilities:        { label: 'ЖКХ',             color: '#F44336', emoji: '💡' },
+    debts:            { label: 'Долги / кредиты', color: '#E91E63', emoji: '💳' },
+    transport:        { label: 'Транспорт',       color: '#3F51B5', emoji: '🚌' },
+    gifts:            { label: 'Подарки',         color: '#FF4081', emoji: '🎁' },
+    other:            { label: 'Прочие расходы',  color: '#607D8B', emoji: '📦' }
+};
+
 // ===================== DOM =====================
 const tabs = document.querySelectorAll('.tab');
 const views = document.querySelectorAll('.view');
@@ -18,6 +33,7 @@ const addInput = document.getElementById('new-item-input');
 const addQtyInput = document.getElementById('new-qty-input');
 const addUnitSelect = document.getElementById('new-unit-select');
 const addPriceInput = document.getElementById('new-price-input');
+const addCategorySelect = document.getElementById('new-category-select');
 const addBtn = document.getElementById('add-btn');
 
 const planningPagesContainer = document.getElementById('planning-pages');
@@ -27,6 +43,7 @@ const startShoppingBtn = document.getElementById('start-shopping-btn');
 const progressBar = document.getElementById('progress-bar');
 const progressText = document.getElementById('progress-text');
 const totalSumText = document.getElementById('total-sum-text');
+const planCompletedBanner = document.getElementById('plan-completed-banner');
 
 const menuBtn = document.getElementById('menu-btn');
 const sideMenu = document.getElementById('side-menu');
@@ -85,7 +102,20 @@ const limitInput = document.getElementById('limit-input');
 const limitSaveBtn = document.getElementById('limit-save-btn');
 const limitCancelBtn = document.getElementById('limit-cancel-btn');
 
+// Категории / диаграмма
+const categoryChartSvg = document.getElementById('category-chart');
+const categoryLegend = document.getElementById('category-legend');
+const chartTotalEl = document.getElementById('chart-total');
+
+// Бэкап
+const backupIntervalSelect = document.getElementById('backup-interval');
+const backupSaveNowBtn = document.getElementById('backup-save-now-btn');
+const backupRestoreBtn = document.getElementById('backup-restore-btn');
+const backupRestoreInput = document.getElementById('backup-restore-input');
+const backupStatus = document.getElementById('backup-status');
+
 let modalCurrentPlanId = null;
+let planCompletionTimer = null;
 
 // ===================== НАВИГАЦИЯ =====================
 tabs.forEach(tab => {
@@ -101,8 +131,8 @@ tabs.forEach(tab => {
 // ===================== ХЕЛПЕРЫ =====================
 function formatPrice(price) {
     if (!price && price !== 0) return '';
-    return new Intl.NumberFormat('ru-RU', { 
-        style: 'currency', currency: 'RUB', maximumFractionDigits: 0 
+    return new Intl.NumberFormat('ru-RU', {
+        style: 'currency', currency: 'RUB', maximumFractionDigits: 0
     }).format(price);
 }
 
@@ -152,6 +182,7 @@ function encodePlan(plan) {
             q: it.qty,
             u: it.unit,
             p: it.price,
+            cat: it.category,
             ch: it.checked
         }))
     };
@@ -180,6 +211,7 @@ function decodePlan(encoded) {
                 qty: it.q,
                 unit: it.u,
                 price: it.p,
+                category: it.cat || 'other',
                 checked: !!it.ch,
                 selectedForDeletion: false
             }))
@@ -227,7 +259,7 @@ function downloadPlan(plan) {
         alert('Список пуст, нечего скачивать');
         return;
     }
-    
+
     const exportData = {
         version: 1,
         exportedAt: new Date().toISOString(),
@@ -240,6 +272,7 @@ function downloadPlan(plan) {
                 qty: it.qty,
                 unit: it.unit,
                 price: it.price,
+                category: it.category,
                 checked: it.checked
             }))
         }
@@ -274,7 +307,8 @@ function exportAllPlans() {
             date: p.date,
             createdAt: p.createdAt,
             items: p.items.map(it => ({
-                name: it.name, qty: it.qty, unit: it.unit, price: it.price, checked: it.checked
+                name: it.name, qty: it.qty, unit: it.unit,
+                price: it.price, category: it.category, checked: it.checked
             }))
         })),
         history: state.history.map(p => ({
@@ -284,7 +318,8 @@ function exportAllPlans() {
             completedAt: p.completedAt,
             originalPlanId: p.originalPlanId,
             items: p.items.map(it => ({
-                name: it.name, qty: it.qty, unit: it.unit, price: it.price, checked: it.checked
+                name: it.name, qty: it.qty, unit: it.unit,
+                price: it.price, category: it.category, checked: it.checked
             }))
         }))
     };
@@ -338,6 +373,7 @@ function importSinglePlan(rawPlan) {
             qty: it.qty || it.q || 1,
             unit: it.unit || it.u || 'шт',
             price: (typeof it.price !== 'undefined' ? it.price : (typeof it.p !== 'undefined' ? it.p : null)),
+            category: it.category || it.cat || 'other',
             checked: !!(it.checked || it.ch),
             selectedForDeletion: false
         }))
@@ -384,6 +420,7 @@ function importFullBackup(data) {
             qty: it.qty,
             unit: it.unit,
             price: it.price,
+            category: it.category || 'other',
             checked: !!it.checked,
             selectedForDeletion: false
         }))
@@ -460,6 +497,7 @@ function addItem() {
     const qtyValue = addQtyInput.value.trim();
     const unit = addUnitSelect.value;
     const priceValue = addPriceInput.value.trim();
+    const category = addCategorySelect ? addCategorySelect.value : 'products';
     if (!text) return;
 
     const qty = qtyValue === '' ? 1 : parseFloat(qtyValue);
@@ -471,10 +509,11 @@ function addItem() {
         qty: isNaN(qty) ? 1 : qty,
         unit: unit,
         price: isNaN(price) ? null : price,
+        category: category,
         checked: false,
         selectedForDeletion: false
     });
-    
+
     addInput.value = '';
     addQtyInput.value = '1';
     addUnitSelect.value = 'шт';
@@ -492,13 +531,13 @@ function renderPlanningList() {
 
     const selectedCount = state.currentItems.filter(i => i.selectedForDeletion).length;
     const controls = document.getElementById('planning-controls');
-    
+
     if (state.currentItems.length === 0) {
         planningPagesContainer.innerHTML = '';
         controls.classList.add('hidden');
         return;
     }
-    
+
     if (selectedCount > 0) {
         controls.classList.remove('hidden');
         document.getElementById('delete-selected-items-btn').textContent = `🗑 Удалить выбранные (${selectedCount})`;
@@ -537,7 +576,7 @@ document.getElementById('delete-selected-items-btn').addEventListener('click', (
     const selectedCount = state.currentItems.filter(i => i.selectedForDeletion).length;
     if (selectedCount === 0) return;
     if (!confirm(`Удалить ${selectedCount} ${pluralize(selectedCount, 'позицию', 'позиции', 'позиций')}?`)) return;
-    
+
     state.currentItems = state.currentItems.filter(i => !i.selectedForDeletion);
     renderPlanningList();
 });
@@ -560,11 +599,11 @@ startShoppingBtn.addEventListener('click', () => {
 
     state.plans.push(newPlan);
     state.activePlanId = newPlan.id;
-    
+
     saveToLocalStorage();
     renderShoppingList();
     document.getElementById('tab-shop').click();
-    
+
     state.currentItems = [];
     renderPlanningList();
 });
@@ -600,7 +639,7 @@ downloadPlanningBtn.addEventListener('click', () => {
 // ===================== ВЫПОЛНЕНИЕ =====================
 function renderShoppingList() {
     const activePlan = state.plans.find(p => p.id === state.activePlanId);
-    
+
     if (!activePlan || activePlan.items.length === 0) {
         noActivePlan.classList.remove('hidden');
         activePlanContent.classList.add('hidden');
@@ -629,6 +668,9 @@ function renderShoppingList() {
 
     updateProgress(checkedCount, activePlan.items.length);
     updateTotalSum(spentSum, totalSum);
+
+    // Если план уже выполнен (например, после перезагрузки) — не показываем баннер повторно,
+    // он срабатывает только в момент toggleCheck.
 }
 
 function updateTotalSum(spent, total) {
@@ -641,35 +683,72 @@ function updateTotalSum(spent, total) {
     }
 }
 
+// ===================== ВЫПОЛНЕНИЕ ПЛАНА =====================
+function showPlanCompletedAndReset() {
+    // Показываем баннер
+    if (planCompletedBanner) {
+        planCompletedBanner.classList.remove('hidden');
+    }
+
+    // Через 1.5 сек: очищаем активный план и перекидываем на «Планирование»
+    planCompletionTimer = setTimeout(() => {
+        const activePlan = state.plans.find(p => p.id === state.activePlanId);
+
+        // Убираем план из активных (он уже в истории)
+        if (activePlan) {
+            state.plans = state.plans.filter(p => p.id !== state.activePlanId);
+            state.activePlanId = null;
+        }
+
+        saveToLocalStorage();
+        renderShoppingList();
+
+        // Сбрасываем баннер
+        if (planCompletedBanner) {
+            planCompletedBanner.classList.add('hidden');
+        }
+
+        // Перекидываем на вкладку «Планирование»
+        document.getElementById('tab-plan').click();
+    }, 1500);
+}
+
 window.toggleCheck = function(itemId) {
     const activePlan = state.plans.find(p => p.id === state.activePlanId);
     if (!activePlan) return;
 
     const item = activePlan.items.find(i => i.id === itemId);
-    if (item) {
-        item.checked = !item.checked;
+    if (!item) return;
 
-        const allChecked = activePlan.items.length > 0 && activePlan.items.every(i => i.checked);
-        
-        const existingIdx = state.history.findIndex(h => h.id === activePlan.id);
+    item.checked = !item.checked;
 
-        if (allChecked) {
-            const historyEntry = {
-                ...activePlan,
-                id: existingIdx >= 0 ? state.history[existingIdx].id : (activePlan.id + '-' + Date.now()),
-                originalPlanId: activePlan.id,
-                completedAt: new Date().toISOString()
-            };
+    const allChecked = activePlan.items.length > 0 && activePlan.items.every(i => i.checked);
 
-            if (existingIdx >= 0) {
-                state.history[existingIdx] = historyEntry;
-            } else {
-                state.history.push(historyEntry);
-            }
-        } else if (existingIdx >= 0) {
-            state.history.splice(existingIdx, 1);
+    const existingIdx = state.history.findIndex(h => h.originalPlanId === activePlan.id);
+
+    if (allChecked) {
+        const historyEntry = {
+            ...activePlan,
+            id: existingIdx >= 0 ? state.history[existingIdx].id : (activePlan.id + '-' + Date.now()),
+            originalPlanId: activePlan.id,
+            completedAt: new Date().toISOString()
+        };
+
+        if (existingIdx >= 0) {
+            state.history[existingIdx] = historyEntry;
+        } else {
+            state.history.push(historyEntry);
         }
 
+        saveToLocalStorage();
+        renderStats();
+
+        // Показываем «План выполнен», очищаем и перекидываем на планирование
+        showPlanCompletedAndReset();
+    } else {
+        if (existingIdx >= 0) {
+            state.history.splice(existingIdx, 1);
+        }
         saveToLocalStorage();
         renderShoppingList();
         renderStats();
@@ -734,10 +813,13 @@ function renderPages(container, pages, mode) {
             const li = document.createElement('li');
             li.className = 'list-item' + (item.checked ? ' done' : '');
 
+            const cat = CATEGORIES[item.category] || CATEGORIES.other;
+
             if (mode === 'planning') {
                 const imgSrc = item.selectedForDeletion ? 'images/check_mark.png' : 'images/tick_a_box.png';
                 li.innerHTML = `
                     <img src="${imgSrc}" class="item-checkbox" onclick="togglePlanningSelect('${item.id}')" alt="">
+                    <span class="item-cat" title="${cat.label}">${cat.emoji}</span>
                     <span class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
                     <input type="number" class="item-qty-input" value="${item.qty}" min="0" step="0.001"
                            onchange="updatePlanningQty('${item.id}', this.value)" placeholder="Кол-во">
@@ -749,6 +831,7 @@ function renderPages(container, pages, mode) {
                 const imgSrc = item.checked ? 'images/check_mark.png' : 'images/tick_a_box.png';
                 li.innerHTML = `
                     <img src="${imgSrc}" class="checkbox-img" onclick="toggleCheck('${item.id}')" alt="">
+                    <span class="item-cat" title="${cat.label}">${cat.emoji}</span>
                     <span class="item-name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
                     <span class="item-qty">${getQtyLabel(item)}</span>
                     <span class="item-price-display">${item.price ? formatPrice(getItemTotal(item)) : '—'}</span>
@@ -764,11 +847,17 @@ function renderPages(container, pages, mode) {
 }
 
 // ===================== МЕНЮ =====================
+// Магнитик: первое нажатие — открыть, повторное — закрыть
 menuBtn.addEventListener('click', () => {
-    renderSavedPlans();
-    renderStats();
-    switchMenuTab('plans');
-    sideMenu.classList.remove('hidden');
+    if (sideMenu.classList.contains('hidden')) {
+        renderSavedPlans();
+        renderStats();
+        switchMenuTab('plans');
+        sideMenu.classList.remove('hidden');
+    } else {
+        exitSelectMode();
+        sideMenu.classList.add('hidden');
+    }
 });
 
 closeMenuBtn.addEventListener('click', () => {
@@ -843,12 +932,12 @@ function deleteSelectedPlans() {
     if (!confirm(`Удалить ${count} ${pluralize(count, 'план', 'плана', 'планов')}?`)) return;
 
     state.plans = state.plans.filter(p => !state.selectedPlans.includes(p.id));
-    
+
     if (state.activePlanId && state.selectedPlans.includes(state.activePlanId)) {
         state.activePlanId = null;
         renderShoppingList();
     }
-    
+
     saveToLocalStorage();
     exitSelectMode();
     renderSavedPlans();
@@ -867,13 +956,13 @@ window.togglePlanSelection = function(planId) {
 function renderSavedPlans() {
     savedPlansList.innerHTML = '';
     const reversedPlans = [...state.plans].reverse();
-    
+
     if (reversedPlans.length === 0) {
         savedPlansList.innerHTML = '<p class="stats-empty">Пока нет сохранённых планов</p>';
         selectModeBtn.classList.add('hidden');
         return;
     }
-    
+
     selectModeBtn.classList.remove('hidden');
 
     reversedPlans.forEach(plan => {
@@ -882,7 +971,7 @@ function renderSavedPlans() {
         const percent = total === 0 ? 0 : Math.round((checked / total) * 100);
         const planTotal = plan.items.reduce((acc, i) => acc + getItemTotal(i), 0);
         const planSpent = plan.items.filter(i => i.checked).reduce((acc, i) => acc + getItemTotal(i), 0);
-        
+
         const li = document.createElement('li');
         li.className = 'plan-item';
 
@@ -939,6 +1028,7 @@ window.resumePlan = function(planId) {
         qty: i.qty,
         unit: i.unit,
         price: i.price,
+        category: i.category || 'other',
         checked: false,
         selectedForDeletion: false
     }));
@@ -970,7 +1060,7 @@ nextMonthBtn.addEventListener('click', () => {
 clearStatsBtn.addEventListener('click', () => {
     const year = state.statsMonth.getFullYear();
     const month = state.statsMonth.getMonth();
-    
+
     const monthPlans = state.history.filter(plan => {
         const planDate = new Date(plan.completedAt || plan.createdAt || plan.date);
         return planDate.getFullYear() === year && planDate.getMonth() === month;
@@ -993,7 +1083,7 @@ clearStatsBtn.addEventListener('click', () => {
 function renderStats() {
     const year = state.statsMonth.getFullYear();
     const month = state.statsMonth.getMonth();
-    
+
     const monthName = state.statsMonth.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
     currentMonthLabel.textContent = monthName;
 
@@ -1012,11 +1102,14 @@ function renderStats() {
     statsTotalSum.textContent = formatPrice(totalSum) || '0 ₽';
     statsPlansCount.textContent = `${monthPlans.length} ${pluralize(monthPlans.length, 'план', 'плана', 'планов')}`;
 
-    // === ЛИМИТ: обновляем отображение ===
+    // === ЛИМИТ ===
     renderLimit(year, month, totalSum);
 
+    // === КАТЕГОРИИ ===
+    renderCategoryChart(monthPlans);
+
     statsPlansList.innerHTML = '';
-    
+
     if (monthPlans.length === 0) {
         statsPlansList.innerHTML = '<p class="stats-empty">За этот месяц нет покупок</p>';
         return;
@@ -1027,7 +1120,7 @@ function renderStats() {
         const total = plan.items.length;
         const planSpent = plan.items.filter(i => i.checked).reduce((acc, i) => acc + getItemTotal(i), 0);
         const planTotal = plan.items.reduce((acc, i) => acc + getItemTotal(i), 0);
-        
+
         const li = document.createElement('li');
         li.className = 'plan-item';
         li.innerHTML = `
@@ -1043,7 +1136,73 @@ function renderStats() {
     });
 }
 
-// ===== ЛОГИКА ЛИМИТА =====
+// ===================== КАТЕГОРИИ / ДИАГРАММА =====================
+function renderCategoryChart(monthPlans) {
+    if (!categoryChartSvg || !categoryLegend) return;
+
+    const sums = {};
+    let total = 0;
+
+    monthPlans.forEach(plan => {
+        plan.items.forEach(item => {
+            if (!item.checked) return;
+            const sum = getItemTotal(item);
+            if (sum <= 0) return;
+            const cat = item.category && CATEGORIES[item.category] ? item.category : 'other';
+            sums[cat] = (sums[cat] || 0) + sum;
+            total += sum;
+        });
+    });
+
+    categoryChartSvg.innerHTML = '';
+    categoryLegend.innerHTML = '';
+
+    if (total === 0) {
+        if (chartTotalEl) chartTotalEl.textContent = '0 ₽';
+        categoryLegend.innerHTML = '<li style="grid-column:1/-1;color:#999;">Нет купленных товаров с ценами</li>';
+        return;
+    }
+
+    if (chartTotalEl) chartTotalEl.textContent = formatPrice(total);
+
+    const radius = 80;
+    const cx = 100, cy = 100;
+    const circumference = 2 * Math.PI * radius;
+    let offset = 0;
+
+    const sorted = Object.entries(sums).sort((a, b) => b[1] - a[1]);
+
+    sorted.forEach(([catKey, sum]) => {
+        const cat = CATEGORIES[catKey] || CATEGORIES.other;
+        const fraction = sum / total;
+        const dash = fraction * circumference;
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', cx);
+        circle.setAttribute('cy', cy);
+        circle.setAttribute('r', radius);
+        circle.setAttribute('fill', 'none');
+        circle.setAttribute('stroke', cat.color);
+        circle.setAttribute('stroke-width', 28);
+        circle.setAttribute('stroke-dasharray', `${dash} ${circumference - dash}`);
+        circle.setAttribute('stroke-dashoffset', -offset);
+        circle.setAttribute('class', 'donut-segment');
+        circle.innerHTML = `<title>${cat.label}: ${formatPrice(sum)} (${Math.round(fraction * 100)}%)</title>`;
+        categoryChartSvg.appendChild(circle);
+
+        offset += dash;
+
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <span class="legend-dot" style="background:${cat.color}"></span>
+            <span>${cat.emoji} ${cat.label}</span>
+            <span class="legend-sum">${formatPrice(sum)}</span>
+        `;
+        categoryLegend.appendChild(li);
+    });
+}
+
+// ===================== ЛИМИТ =====================
 function getLimitKey(year, month) {
     return `korzinka_limit_${year}_${month}`;
 }
@@ -1095,7 +1254,6 @@ function renderLimit(year, month, totalSum) {
     }
 }
 
-// ===== КНОПКИ РЕДАКТИРОВАНИЯ ЛИМИТА =====
 editLimitBtn.addEventListener('click', () => {
     const year = state.statsMonth.getFullYear();
     const month = state.statsMonth.getMonth();
@@ -1132,7 +1290,7 @@ limitInput.addEventListener('keypress', (e) => {
 window.deletePlanFromStats = function(planId, event) {
     event.stopPropagation();
     if (!confirm('Удалить этот план из статистики?')) return;
-    
+
     state.history = state.history.filter(p => p.id !== planId);
     saveToLocalStorage();
     renderStats();
@@ -1157,8 +1315,10 @@ function renderModalItems(plan) {
         const li = document.createElement('li');
         const imgSrc = item.checked ? 'images/check_mark.png' : 'images/tick_a_box.png';
         const totalPrice = item.price ? formatPrice(getItemTotal(item)) : '—';
+        const cat = CATEGORIES[item.category] || CATEGORIES.other;
         li.innerHTML = `
             <img src="${imgSrc}" class="modal-item-check">
+            <span class="item-cat" title="${cat.label}">${cat.emoji}</span>
             <span class="modal-item-name ${item.checked ? 'checked' : ''}">${escapeHtml(item.name)}</span>
             <input type="number" class="modal-item-qty-input" value="${item.qty}" min="0" step="0.001"
                    onchange="updateModalQty('${item.id}', this.value)" placeholder="Кол-во">
@@ -1197,7 +1357,7 @@ window.updateModalQty = function(itemId, value) {
     item.qty = isNaN(qty) || qty < 0 ? 1 : qty;
     saveToLocalStorage();
     renderModalItems(plan);
-    
+
     if (plan.id === state.activePlanId) renderShoppingList();
     renderStats();
     renderSavedPlans();
@@ -1215,7 +1375,7 @@ window.updateModalPrice = function(itemId, value) {
     item.price = isNaN(price) || price < 0 ? null : price;
     saveToLocalStorage();
     renderModalItems(plan);
-    
+
     if (plan.id === state.activePlanId) renderShoppingList();
     renderStats();
     renderSavedPlans();
@@ -1260,6 +1420,275 @@ document.addEventListener('keydown', (e) => {
         modal.classList.add('hidden');
     }
 });
+
+// ===================== БЭКАП В ЛОКАЛЬНУЮ ПАПКУ =====================
+const BACKUP_SETTINGS_KEY = 'korzinka_backup_settings';
+const BACKUP_LAST_KEY = 'korzinka_backup_last';
+const BACKUP_HANDLE_DB = 'korzinka_fs';
+const BACKUP_HANDLE_STORE = 'handles';
+const BACKUP_HANDLE_KEY = 'backupFolder';
+
+function getBackupSettings() {
+    try {
+        return JSON.parse(localStorage.getItem(BACKUP_SETTINGS_KEY)) || { interval: 'off' };
+    } catch { return { interval: 'off' }; }
+}
+
+function saveBackupSettings(settings) {
+    localStorage.setItem(BACKUP_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+// IndexedDB хранит только handle папки (ссылка), не данные планов
+function openHandleDB() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(BACKUP_HANDLE_DB, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(BACKUP_HANDLE_STORE);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function saveHandle(handle) {
+    const db = await openHandleDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(BACKUP_HANDLE_STORE, 'readwrite');
+        tx.objectStore(BACKUP_HANDLE_STORE).put(handle, BACKUP_HANDLE_KEY);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+async function loadHandle() {
+    try {
+        const db = await openHandleDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(BACKUP_HANDLE_STORE, 'readonly');
+            const req = tx.objectStore(BACKUP_HANDLE_STORE).get(BACKUP_HANDLE_KEY);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => reject(req.error);
+        });
+    } catch { return null; }
+}
+
+function backupFileName() {
+    return `korzinka-backup-${new Date().toISOString().slice(0, 10)}.json`;
+}
+
+function updateBackupStatus(text) {
+    if (backupStatus) backupStatus.textContent = text;
+}
+
+function makeBackupData() {
+    return {
+        version: 1,
+        type: 'korzinka-full-backup',
+        exportedAt: new Date().toISOString(),
+        plans: state.plans.map(p => ({
+            name: p.name, date: p.date, createdAt: p.createdAt,
+            items: p.items.map(it => ({
+                name: it.name, qty: it.qty, unit: it.unit,
+                price: it.price, category: it.category, checked: it.checked
+            }))
+        })),
+        history: state.history.map(p => ({
+            name: p.name, date: p.date, createdAt: p.createdAt,
+            completedAt: p.completedAt, originalPlanId: p.originalPlanId,
+            items: p.items.map(it => ({
+                name: it.name, qty: it.qty, unit: it.unit,
+                price: it.price, category: it.category, checked: it.checked
+            }))
+        })),
+        activePlanId: state.activePlanId || null
+    };
+}
+
+async function writeToFolder(silent = false) {
+    if (!('showDirectoryPicker' in window)) return false;
+    try {
+        let dirHandle = await loadHandle();
+
+        if (dirHandle) {
+            const perm = await dirHandle.queryPermission({ mode: 'readwrite' });
+            if (perm !== 'granted') {
+                const req = await dirHandle.requestPermission({ mode: 'readwrite' });
+                if (req !== 'granted') dirHandle = null;
+            }
+        }
+
+        if (!dirHandle) {
+            updateBackupStatus('Выберите папку для бэкапов (можно создать «korzinka» кнопкой «Новая папка»).');
+            dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+            await saveHandle(dirHandle);
+        }
+
+        const fileName = backupFileName();
+        const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+
+        const data = makeBackupData();
+        const writable = await fileHandle.createWritable();
+        await writable.write(JSON.stringify(data, null, 2));
+        await writable.close();
+
+        localStorage.setItem(BACKUP_LAST_KEY, new Date().toISOString());
+        const folderName = dirHandle.name || 'папка';
+        updateBackupStatus(`✅ Сохранено в «${folderName}/${fileName}» · ${new Date().toLocaleString('ru-RU')}`);
+        if (!silent) alert(`Бэкап сохранён в «${folderName}/${fileName}».`);
+        return true;
+    } catch (e) {
+        if (e.name === 'AbortError') return false;
+        console.error('Ошибка записи бэкапа:', e);
+        updateBackupStatus('❌ Не удалось записать файл');
+        if (!silent) alert('Не удалось записать файл бэкапа.');
+        return false;
+    }
+}
+
+function downloadBackupFile() {
+    const data = makeBackupData();
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = backupFileName();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    localStorage.setItem(BACKUP_LAST_KEY, new Date().toISOString());
+    updateBackupStatus(`✅ Файл «${backupFileName()}» скачан · ${new Date().toLocaleString('ru-RU')}`);
+}
+
+function isBackupDue() {
+    const settings = getBackupSettings();
+    if (settings.interval === 'off') return false;
+    const last = localStorage.getItem(BACKUP_LAST_KEY);
+    if (!last) return true;
+    const lastDate = new Date(last);
+    const now = new Date();
+    const ms = { weekly: 7 * 24 * 60 * 60 * 1000, monthly: 30 * 24 * 60 * 60 * 1000 };
+    return (now - lastDate) >= (ms[settings.interval] || Infinity);
+}
+
+if (backupIntervalSelect) {
+    const settings = getBackupSettings();
+    backupIntervalSelect.value = settings.interval || 'off';
+    backupIntervalSelect.addEventListener('change', () => {
+        saveBackupSettings({ interval: backupIntervalSelect.value });
+        updateBackupStatus(
+            backupIntervalSelect.value === 'off'
+                ? 'Напоминания выключены'
+                : 'Напоминание включено.'
+        );
+    });
+}
+
+if (backupSaveNowBtn) {
+    backupSaveNowBtn.addEventListener('click', async () => {
+        if ('showDirectoryPicker' in window) {
+            const ok = await writeToFolder(false); // первый раз попросит папку
+            if (ok) return;
+        }
+        downloadBackupFile();
+    });
+}
+
+if (backupRestoreBtn) {
+    backupRestoreBtn.addEventListener('click', () => {
+        backupRestoreInput.value = '';
+        backupRestoreInput.click();
+    });
+}
+
+if (backupRestoreInput) {
+    backupRestoreInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const data = JSON.parse(ev.target.result);
+                if (data.type !== 'korzinka-full-backup' && !data.plans && !data.history) {
+                    alert('В файле нет данных Корзинки');
+                    return;
+                }
+                if (!confirm('Заменить текущие планы и историю данными из бэкапа?')) return;
+
+                const mapItem = (it) => ({
+                    id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+                    name: it.name, qty: it.qty, unit: it.unit,
+                    price: it.price, category: it.category || 'other',
+                    checked: !!it.checked, selectedForDeletion: false
+                });
+
+                state.plans = (data.plans || []).map(p => ({
+                    id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+                    name: p.name, date: p.date, createdAt: p.createdAt,
+                    items: (p.items || []).map(mapItem)
+                }));
+                state.history = (data.history || []).map(p => ({
+                    id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+                    name: p.name, date: p.date, createdAt: p.createdAt,
+                    completedAt: p.completedAt, originalPlanId: p.originalPlanId,
+                    items: (p.items || []).map(mapItem)
+                }));
+                state.activePlanId = data.activePlanId || null;
+
+                saveToLocalStorage();
+                renderSavedPlans();
+                renderShoppingList();
+                renderStats();
+                alert('Бэкап восстановлен.');
+            } catch (err) {
+                console.error(err);
+                alert('Не удалось прочитать файл бэкапа');
+            }
+        };
+        reader.readAsText(file);
+    });
+}
+
+async function checkBackupReminder() {
+    if (!isBackupDue()) return;
+
+    const settings = getBackupSettings();
+    const canSilent = 'showDirectoryPicker' in window;
+    const dirHandle = canSilent ? await loadHandle() : null;
+
+    // Десктоп + папка выбрана + разрешение есть → молча пишем
+    if (canSilent && dirHandle) {
+        const perm = await dirHandle.queryPermission({ mode: 'readwrite' });
+        if (perm === 'granted') {
+            const ok = await writeToFolder(true);
+            if (ok) {
+                updateBackupStatus(`✅ Автобэкап · ${new Date().toLocaleString('ru-RU')}`);
+                return;
+            }
+        }
+    }
+
+    // Всё остальное → спрашиваем
+    const last = localStorage.getItem(BACKUP_LAST_KEY);
+    const lastStr = last ? new Date(last).toLocaleString('ru-RU') : 'никогда';
+    const period = settings.interval === 'weekly' ? 'неделя' : 'месяц';
+
+    setTimeout(() => {
+        const msg =
+            `Пора сделать бэкап Корзинки (раз в ${period}).\n\n` +
+            `Последний бэкап: ${lastStr}\n\n` +
+            `ОК — сохранить сейчас.\n` +
+            `Отмена — напомню при следующем запуске.`;
+        if (confirm(msg)) {
+            if (canSilent) {
+                writeToFolder(false).then(ok => { if (!ok) downloadBackupFile(); });
+            } else {
+                downloadBackupFile();
+            }
+        } else {
+            updateBackupStatus(`⏰ Бэкап отложен. Последний: ${lastStr}`);
+        }
+    }, 1500);
+}
 
 // ===================== ОБНОВЛЕНИЕ =====================
 let currentVersion = localStorage.getItem('korzinka_version') || null;
@@ -1393,6 +1822,8 @@ async function init() {
             if (appVersionLabel) appVersionLabel.textContent = latest;
         }
     }
+
+    checkBackupReminder();
 }
 
 init();
