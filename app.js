@@ -6,6 +6,7 @@ let state = {
     currentItems: [],
     statsMonth: new Date(),
     selectMode: false,
+    editMode: false,
     selectedPlans: []
 };
 
@@ -71,6 +72,7 @@ const statsPlansList = document.getElementById('stats-plans-list');
 const clearStatsBtn = document.getElementById('clear-stats-btn');
 
 const selectModeBtn = document.getElementById('select-mode-btn');
+const editModeBtn = document.getElementById('edit-mode-btn');
 const selectModeActions = document.getElementById('select-mode-actions');
 const cancelSelectBtn = document.getElementById('cancel-select-btn');
 const deleteSelectedBtn = document.getElementById('delete-selected-btn');
@@ -873,12 +875,14 @@ menuBtn.addEventListener('click', () => {
         sideMenu.classList.remove('hidden');
     } else {
         exitSelectMode();
+        exitEditMode();
         sideMenu.classList.add('hidden');
     }
 });
 
 closeMenuBtn.addEventListener('click', () => {
     exitSelectMode();
+    exitEditMode();
     sideMenu.classList.add('hidden');
 });
 
@@ -894,6 +898,7 @@ function switchMenuTab(tab) {
         document.getElementById('plans-controls').classList.remove('hidden');
     } else {
         exitSelectMode();
+        exitEditMode();
         menuTabPlans.classList.remove('active');
         menuTabStats.classList.add('active');
         menuPlansView.classList.add('hidden');
@@ -918,14 +923,18 @@ exportAllBtn.addEventListener('click', exportAllPlans);
 
 // ===================== РЕЖИМ ВЫБОРА ПЛАНОВ =====================
 selectModeBtn.addEventListener('click', enterSelectMode);
+editModeBtn.addEventListener('click', enterEditMode);
 cancelSelectBtn.addEventListener('click', exitSelectMode);
 deleteSelectedBtn.addEventListener('click', deleteSelectedPlans);
 
 function enterSelectMode() {
     state.selectMode = true;
+    state.editMode = false;
     state.selectedPlans = [];
     selectModeBtn.classList.add('hidden');
+    editModeBtn.classList.add('hidden');
     importPlanBtn.classList.add('hidden');
+    exportAllBtn.classList.add('hidden');
     selectModeActions.classList.remove('hidden');
     renderSavedPlans();
 }
@@ -934,8 +943,32 @@ function exitSelectMode() {
     state.selectMode = false;
     state.selectedPlans = [];
     selectModeBtn.classList.remove('hidden');
+    editModeBtn.classList.remove('hidden');
     importPlanBtn.classList.remove('hidden');
+    exportAllBtn.classList.remove('hidden');
     selectModeActions.classList.add('hidden');
+    renderSavedPlans();
+}
+
+// ===================== РЕЖИМ РЕДАКТИРОВАНИЯ =====================
+function enterEditMode() {
+    state.editMode = true;
+    state.selectMode = false;
+    state.selectedPlans = [];
+    selectModeBtn.classList.add('hidden');
+    editModeBtn.classList.add('hidden');
+    importPlanBtn.classList.add('hidden');
+    exportAllBtn.classList.add('hidden');
+    selectModeActions.classList.add('hidden');
+    renderSavedPlans();
+}
+
+function exitEditMode() {
+    state.editMode = false;
+    selectModeBtn.classList.remove('hidden');
+    editModeBtn.classList.remove('hidden');
+    importPlanBtn.classList.remove('hidden');
+    exportAllBtn.classList.remove('hidden');
     renderSavedPlans();
 }
 
@@ -977,10 +1010,12 @@ function renderSavedPlans() {
     if (reversedPlans.length === 0) {
         savedPlansList.innerHTML = '<p class="stats-empty">Пока нет сохранённых планов</p>';
         selectModeBtn.classList.add('hidden');
+        editModeBtn.classList.add('hidden');
         return;
     }
 
     selectModeBtn.classList.remove('hidden');
+    editModeBtn.classList.remove('hidden');
 
     reversedPlans.forEach(plan => {
         const checked = plan.items.filter(i => i.checked).length;
@@ -1003,6 +1038,18 @@ function renderSavedPlans() {
                     <p>Куплено: ${checked} из ${total} (${percent}%)</p>
                     ${planTotal > 0 ? `<p class="plan-sum">${formatPrice(planSpent)} / ${formatPrice(planTotal)}</p>` : ''}
                     <div class="plan-progress"><div class="plan-progress-bar" style="width: ${percent}%"></div></div>
+                </div>
+            `;
+        } else if (state.editMode) {
+            li.innerHTML = `
+                <h3>${escapeHtml(plan.name)}</h3>
+                <p>Куплено: ${checked} из ${total} (${percent}%)</p>
+                ${planTotal > 0 ? `<p class="plan-sum">${formatPrice(planSpent)} / ${formatPrice(planTotal)}</p>` : ''}
+                <div class="plan-progress"><div class="plan-progress-bar" style="width: ${percent}%"></div></div>
+                <div style="display:flex; gap:5px; margin-top:10px; flex-wrap:wrap;">
+                    <button class="main-btn" style="font-size: 14px; padding: 8px; margin:0; flex:1; min-width:130px; background:#FF9800;" onclick="editSavedPlan('${plan.id}')">✏ Редактировать</button>
+                    <button class="share-plan-small" onclick="shareSavedPlan('${plan.id}')">🔗</button>
+                    <button class="share-plan-small" style="background: rgba(76, 175, 80, 0.9);" onclick="downloadSavedPlan('${plan.id}')">💾</button>
                 </div>
             `;
         } else {
@@ -1044,9 +1091,35 @@ window.startSavedPlan = function(planId) {
 
     renderShoppingList();
     exitSelectMode();
+    exitEditMode();
     sideMenu.classList.add('hidden');
 
     document.getElementById('tab-shop').click();
+};
+
+// ===================== РЕДАКТИРОВАТЬ СОХРАНЁННЫЙ ПЛАН =====================
+window.editSavedPlan = function(planId) {
+    const plan = state.plans.find(p => p.id === planId);
+    if (!plan) return;
+
+    state.currentItems = plan.items.map(i => ({
+        id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+        name: i.name,
+        qty: i.qty,
+        unit: i.unit,
+        price: i.price,
+        category: i.category || 'other',
+        checked: false,
+        selectedForDeletion: false
+    }));
+
+    renderPlanningList();
+
+    exitEditMode();
+    exitSelectMode();
+    sideMenu.classList.add('hidden');
+
+    document.getElementById('tab-plan').click();
 };
 
 // ===================== ВЫПОЛНИТЬ СНОВА (пересоздать список) =====================
@@ -1071,6 +1144,7 @@ window.resumePlan = function(planId) {
     renderShoppingList();
 
     exitSelectMode();
+    exitEditMode();
     sideMenu.classList.add('hidden');
 
     document.getElementById('tab-plan').click();
