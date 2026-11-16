@@ -7,7 +7,8 @@ let state = {
     statsMonth: new Date(),
     selectMode: false,
     editMode: false,
-    selectedPlans: []
+    selectedPlans: [],
+    editingPlanId: null
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -530,7 +531,15 @@ function renderPlanningList() {
     state.currentItems.forEach(item => sum += getItemTotal(item));
 
     const title = document.getElementById('plan-title');
-    title.textContent = sum > 0 ? `Новый список (${formatPrice(sum)})` : 'Новый список';
+    if (state.editingPlanId) {
+        const plan = state.plans.find(p => p.id === state.editingPlanId);
+        const name = plan ? plan.name : 'план';
+        title.textContent = sum > 0
+            ? `✏ Редактирование: ${name} (${formatPrice(sum)})`
+            : `✏ Редактирование: ${name}`;
+    } else {
+        title.textContent = sum > 0 ? `Новый список (${formatPrice(sum)})` : 'Новый список';
+    }
 
     const selectedCount = state.currentItems.filter(i => i.selectedForDeletion).length;
     const controls = document.getElementById('planning-controls');
@@ -584,7 +593,7 @@ document.getElementById('delete-selected-items-btn').addEventListener('click', (
     renderPlanningList();
 });
 
-// ===== СОХРАНИТЬ (без запуска) =====
+// ===== СОХРАНИТЬ (обновляет существующий, если в режиме редактирования) =====
 savePlanBtn.addEventListener('click', () => {
     if (state.currentItems.length === 0) {
         alert('Сначала добавьте продукты!');
@@ -592,6 +601,23 @@ savePlanBtn.addEventListener('click', () => {
     }
 
     const itemsToSave = state.currentItems.map(i => ({ ...i, selectedForDeletion: false }));
+
+    if (state.editingPlanId) {
+        const plan = state.plans.find(p => p.id === state.editingPlanId);
+        if (plan) {
+            plan.items = itemsToSave;
+            plan.date = new Date().toLocaleString('ru-RU');
+        }
+        state.editingPlanId = null;
+        saveToLocalStorage();
+
+        state.currentItems = [];
+        renderPlanningList();
+        renderSavedPlans();
+
+        alert('План обновлён.');
+        return;
+    }
 
     const newPlan = {
         id: Date.now().toString(),
@@ -611,7 +637,7 @@ savePlanBtn.addEventListener('click', () => {
     alert(`План «${newPlan.name}» сохранён. Открой меню → Планы → «▶ Выполнить», чтобы начать.`);
 });
 
-// ===== НАЧАТЬ ПОКУПКИ (сохранить + сразу открыть в «Выполнении») =====
+// ===== НАЧАТЬ ПОКУПКИ (обновляет или создаёт + сразу открывает) =====
 startShoppingBtn.addEventListener('click', () => {
     if (state.currentItems.length === 0) {
         alert('Сначала добавьте продукты!');
@@ -620,16 +646,27 @@ startShoppingBtn.addEventListener('click', () => {
 
     const itemsToSave = state.currentItems.map(i => ({ ...i, selectedForDeletion: false }));
 
-    const newPlan = {
-        id: Date.now().toString(),
-        name: `План от ${new Date().toLocaleDateString('ru-RU')}`,
-        items: itemsToSave,
-        date: new Date().toLocaleString('ru-RU'),
-        createdAt: new Date().toISOString()
-    };
+    let targetPlan;
 
-    state.plans.push(newPlan);
-    state.activePlanId = newPlan.id;
+    if (state.editingPlanId) {
+        targetPlan = state.plans.find(p => p.id === state.editingPlanId);
+        if (targetPlan) {
+            targetPlan.items = itemsToSave;
+            targetPlan.date = new Date().toLocaleString('ru-RU');
+        }
+        state.editingPlanId = null;
+    } else {
+        targetPlan = {
+            id: Date.now().toString(),
+            name: `План от ${new Date().toLocaleDateString('ru-RU')}`,
+            items: itemsToSave,
+            date: new Date().toLocaleString('ru-RU'),
+            createdAt: new Date().toISOString()
+        };
+        state.plans.push(targetPlan);
+    }
+
+    state.activePlanId = targetPlan.id;
 
     saveToLocalStorage();
     renderShoppingList();
@@ -645,7 +682,9 @@ sharePlanningBtn.addEventListener('click', () => {
         return;
     }
     const planToShare = {
-        name: `План от ${new Date().toLocaleDateString('ru-RU')}`,
+        name: state.editingPlanId
+            ? (state.plans.find(p => p.id === state.editingPlanId)?.name || 'План')
+            : `План от ${new Date().toLocaleDateString('ru-RU')}`,
         date: new Date().toLocaleString('ru-RU'),
         createdAt: new Date().toISOString(),
         items: state.currentItems
@@ -659,7 +698,9 @@ downloadPlanningBtn.addEventListener('click', () => {
         return;
     }
     const planToSave = {
-        name: `План от ${new Date().toLocaleDateString('ru-RU')}`,
+        name: state.editingPlanId
+            ? (state.plans.find(p => p.id === state.editingPlanId)?.name || 'План')
+            : `План от ${new Date().toLocaleDateString('ru-RU')}`,
         date: new Date().toLocaleString('ru-RU'),
         createdAt: new Date().toISOString(),
         items: state.currentItems
@@ -1102,6 +1143,8 @@ window.editSavedPlan = function(planId) {
     const plan = state.plans.find(p => p.id === planId);
     if (!plan) return;
 
+    state.editingPlanId = planId;
+
     state.currentItems = plan.items.map(i => ({
         id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
         name: i.name,
@@ -1127,6 +1170,7 @@ window.resumePlan = function(planId) {
     const plan = state.plans.find(p => p.id === planId);
     if (!plan) return;
 
+    state.editingPlanId = null;
     state.currentItems = plan.items.map(i => ({
         id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
         name: i.name,
