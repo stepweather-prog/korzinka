@@ -668,9 +668,6 @@ function renderShoppingList() {
 
     updateProgress(checkedCount, activePlan.items.length);
     updateTotalSum(spentSum, totalSum);
-
-    // Если план уже выполнен (например, после перезагрузки) — не показываем баннер повторно,
-    // он срабатывает только в момент toggleCheck.
 }
 
 function updateTotalSum(spent, total) {
@@ -683,18 +680,14 @@ function updateTotalSum(spent, total) {
     }
 }
 
-// ===================== ВЫПОЛНЕНИЕ ПЛАНА =====================
 function showPlanCompletedAndReset() {
-    // Показываем баннер
     if (planCompletedBanner) {
         planCompletedBanner.classList.remove('hidden');
     }
 
-    // Через 1.5 сек: очищаем активный план и перекидываем на «Планирование»
     planCompletionTimer = setTimeout(() => {
         const activePlan = state.plans.find(p => p.id === state.activePlanId);
 
-        // Убираем план из активных (он уже в истории)
         if (activePlan) {
             state.plans = state.plans.filter(p => p.id !== state.activePlanId);
             state.activePlanId = null;
@@ -703,12 +696,10 @@ function showPlanCompletedAndReset() {
         saveToLocalStorage();
         renderShoppingList();
 
-        // Сбрасываем баннер
         if (planCompletedBanner) {
             planCompletedBanner.classList.add('hidden');
         }
 
-        // Перекидываем на вкладку «Планирование»
         document.getElementById('tab-plan').click();
     }, 1500);
 }
@@ -742,8 +733,6 @@ window.toggleCheck = function(itemId) {
 
         saveToLocalStorage();
         renderStats();
-
-        // Показываем «План выполнен», очищаем и перекидываем на планирование
         showPlanCompletedAndReset();
     } else {
         if (existingIdx >= 0) {
@@ -847,7 +836,6 @@ function renderPages(container, pages, mode) {
 }
 
 // ===================== МЕНЮ =====================
-// Магнитик: первое нажатие — открыть, повторное — закрыть
 menuBtn.addEventListener('click', () => {
     if (sideMenu.classList.contains('hidden')) {
         renderSavedPlans();
@@ -1102,10 +1090,7 @@ function renderStats() {
     statsTotalSum.textContent = formatPrice(totalSum) || '0 ₽';
     statsPlansCount.textContent = `${monthPlans.length} ${pluralize(monthPlans.length, 'план', 'плана', 'планов')}`;
 
-    // === ЛИМИТ ===
     renderLimit(year, month, totalSum);
-
-    // === КАТЕГОРИИ ===
     renderCategoryChart(monthPlans);
 
     statsPlansList.innerHTML = '';
@@ -1438,7 +1423,6 @@ function saveBackupSettings(settings) {
     localStorage.setItem(BACKUP_SETTINGS_KEY, JSON.stringify(settings));
 }
 
-// IndexedDB хранит только handle папки (ссылка), не данные планов
 function openHandleDB() {
     return new Promise((resolve, reject) => {
         const req = indexedDB.open(BACKUP_HANDLE_DB, 1);
@@ -1470,8 +1454,15 @@ async function loadHandle() {
     } catch { return null; }
 }
 
-function backupFileName() {
-    return `korzinka-backup-${new Date().toISOString().slice(0, 10)}.json`;
+function backupFileNameOverwrite() {
+    return 'korzinka-backup.json';
+}
+
+function backupFileNameNew() {
+    const d = new Date();
+    const date = d.toISOString().slice(0, 10);
+    const time = d.toTimeString().slice(0, 5).replace(':', '-');
+    return `korzinka-backup-${date}_${time}.json`;
 }
 
 function updateBackupStatus(text) {
@@ -1521,9 +1512,51 @@ async function writeToFolder(silent = false) {
             await saveHandle(dirHandle);
         }
 
-        const fileName = backupFileName();
-        const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+        let existingFile = null;
+        try {
+            existingFile = await dirHandle.getFileHandle('korzinka-backup.json');
+        } catch (e) {
+            // файла нет — это нормально
+        }
 
+        let fileName;
+        let overwrite = true;
+
+        if (existingFile) {
+            if (silent) {
+                fileName = backupFileNameOverwrite();
+                overwrite = true;
+            } else {
+                let lastStr = 'неизвестно';
+                try {
+                    const f = await existingFile.getFile();
+                    const text = await f.text();
+                    const parsed = JSON.parse(text);
+                    if (parsed.exportedAt) {
+                        lastStr = new Date(parsed.exportedAt).toLocaleString('ru-RU');
+                    }
+                } catch (e) { /* ignore */ }
+
+                const choice = confirm(
+                    `Бэкап уже существует:\nkorzinka-backup.json\nПоследний: ${lastStr}\n\n` +
+                    `ОК = перезаписать (обновить)\n` +
+                    `Отмена = создать новый файл с датой и временем`
+                );
+
+                if (choice) {
+                    fileName = backupFileNameOverwrite();
+                    overwrite = true;
+                } else {
+                    fileName = backupFileNameNew();
+                    overwrite = false;
+                }
+            }
+        } else {
+            fileName = backupFileNameOverwrite();
+            overwrite = true;
+        }
+
+        const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
         const data = makeBackupData();
         const writable = await fileHandle.createWritable();
         await writable.write(JSON.stringify(data, null, 2));
@@ -1531,8 +1564,9 @@ async function writeToFolder(silent = false) {
 
         localStorage.setItem(BACKUP_LAST_KEY, new Date().toISOString());
         const folderName = dirHandle.name || 'папка';
-        updateBackupStatus(`✅ Сохранено в «${folderName}/${fileName}» · ${new Date().toLocaleString('ru-RU')}`);
-        if (!silent) alert(`Бэкап сохранён в «${folderName}/${fileName}».`);
+        const action = overwrite ? 'перезаписан' : 'создан новый';
+        updateBackupStatus(`✅ ${action}: «${folderName}/${fileName}» · ${new Date().toLocaleString('ru-RU')}`);
+        if (!silent) alert(`Бэкап ${action}: «${folderName}/${fileName}».`);
         return true;
     } catch (e) {
         if (e.name === 'AbortError') return false;
@@ -1550,13 +1584,13 @@ function downloadBackupFile() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = backupFileName();
+    a.download = backupFileNameNew();
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     localStorage.setItem(BACKUP_LAST_KEY, new Date().toISOString());
-    updateBackupStatus(`✅ Файл «${backupFileName()}» скачан · ${new Date().toLocaleString('ru-RU')}`);
+    updateBackupStatus(`✅ Файл «${backupFileNameNew()}» скачан · ${new Date().toLocaleString('ru-RU')}`);
 }
 
 function isBackupDue() {
@@ -1586,7 +1620,7 @@ if (backupIntervalSelect) {
 if (backupSaveNowBtn) {
     backupSaveNowBtn.addEventListener('click', async () => {
         if ('showDirectoryPicker' in window) {
-            const ok = await writeToFolder(false); // первый раз попросит папку
+            const ok = await writeToFolder(false);
             if (ok) return;
         }
         downloadBackupFile();
@@ -1655,7 +1689,6 @@ async function checkBackupReminder() {
     const canSilent = 'showDirectoryPicker' in window;
     const dirHandle = canSilent ? await loadHandle() : null;
 
-    // Десктоп + папка выбрана + разрешение есть → молча пишем
     if (canSilent && dirHandle) {
         const perm = await dirHandle.queryPermission({ mode: 'readwrite' });
         if (perm === 'granted') {
@@ -1667,7 +1700,6 @@ async function checkBackupReminder() {
         }
     }
 
-    // Всё остальное → спрашиваем
     const last = localStorage.getItem(BACKUP_LAST_KEY);
     const lastStr = last ? new Date(last).toLocaleString('ru-RU') : 'никогда';
     const period = settings.interval === 'weekly' ? 'неделя' : 'месяц';
